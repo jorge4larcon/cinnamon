@@ -1,6 +1,6 @@
 extern crate clap;
 
-use cinnamon::clients;
+use cinnamon::config;
 use cinnamon::ipparser;
 use clap::{Arg, App, SubCommand, AppSettings};
 
@@ -67,7 +67,7 @@ fn capacity_validator(c: String) -> Result<(), String> {
 }
 
 fn main() {
-    let matches = App::new("Dinosaur Server")
+    let matches = App::new("MINT Server")
                           .version("1.0")
                           .author("Jorge A. <jorge4larcon@gmail.com>")
                           .about("Connecting clients between LAN")
@@ -85,21 +85,13 @@ fn main() {
                                             .takes_value(true)
                                             .required(false)
                                             .number_of_values(1)
-                                            .validator(sock_addr_validator))
-                                        .arg(Arg::with_name("managers")
-                                            .short("m")
-                                            .long("managers")
-                                            .value_name("MANAGERS")
-                                            .help("The IP addresses of the administrators, the server address is always included")
-                                            .takes_value(true)
-                                            .required(false)
-                                            .multiple(true))
+                                            .validator(sock_addr_validator))                                        
                                         .arg(Arg::with_name("key")
                                             .short("k")
                                             .long("key")
                                             .value_name("KEY")
-                                            .help("Sets the password for managers")
-                                            .default_value("manager_secret")
+                                            .help("Sets the admin's password")
+                                            .default_value("admin_secret")
                                             .takes_value(true)
                                             .required(false)
                                             .number_of_values(1)
@@ -129,15 +121,11 @@ fn main() {
                                             .long("drop-verification")
                                             .long_help("When enabled, the server tries to connect to the client that is going to be dropped, if the connection fails the client is dropped, else restarts its drop votes to zero")
                                             .multiple(false)
-                                            .required(false))
-                                        .arg(Arg::with_name("mac-sharing")
-                                            .short("M")
-                                            .long("mac-sharing")
-                                            .long_help("When enabled, the server sends the MAC address to the clients when they send GET requests"))
-                                        .arg(Arg::with_name("list-limit")
+                                            .required(false))                                        
+                                        .arg(Arg::with_name("list-size")
                                             .short("l")
                                             .long("list-limit")
-                                            .value_name("GET'S LIST LIMIT")
+                                            .value_name("GET'S LIST SIZE")
                                             .help("Sets how many users the server will send to a GET request")
                                             .default_value("5")
                                             .takes_value(true)
@@ -155,4 +143,10 @@ fn main() {
                                             .number_of_values(1)                                            
                                             .validator(capacity_validator)))
                           .get_matches();
+
+    let start_command_config: config::StartConfig;
+    match config::StartConfig::new(matches) {
+        Some(config) => 
+    }
+
 }
