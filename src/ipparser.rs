@@ -4,7 +4,7 @@ use regex::Regex;
 use std::fmt;
 use std::cmp;
 
-#[derive(Eq)]
+#[derive(Eq, Clone)]
 pub struct MacAddress {
     mac: u64
 }
@@ -282,16 +282,16 @@ pub fn mac_compare_u64(mac: u64, other_mac: u64) -> Result<i8, ()> {
     Err(())
 }
 
-pub fn ipv6_compare_str(ipv6: &str, other_ipv6: &str) -> Result<i8, ()> {
-    let ipv6 = ipv6_to_u128(ipv6)?;
-    let other_ipv6 = ipv6_to_u128(other_ipv6)?;
-    if ipv6 < other_ipv6 {
-        return Ok(-1);
-    } else if ipv6 > other_ipv6 {
-        return Ok(1);
-    }
-    Ok(0)
-}    
+// pub fn ipv6_compare_str(ipv6: &str, other_ipv6: &str) -> Result<i8, ()> {
+//     let ipv6 = ipv6_to_u128(ipv6)?;
+//     let other_ipv6 = ipv6_to_u128(other_ipv6)?;
+//     if ipv6 < other_ipv6 {
+//         return Ok(-1);
+//     } else if ipv6 > other_ipv6 {
+//         return Ok(1);
+//     }
+//     Ok(0)
+// }    
 
 pub fn ipv6_compare_u128(ipv6: u128, other_ipv6: u128) -> i8 {
     if ipv6 < other_ipv6 {
@@ -302,16 +302,16 @@ pub fn ipv6_compare_u128(ipv6: u128, other_ipv6: u128) -> i8 {
     0
 }
 
-pub fn ipv4_compare_str(ipv4: &str, other_ipv4: &str) -> Result<i8, ()> {
-    let ipv4 = ipv4_to_u32(ipv4)?;
-    let other_ipv4 = ipv4_to_u32(other_ipv4)?;
-    if ipv4 < other_ipv4 {
-        return Ok(-1);
-    } else if other_ipv4 > ipv4 {
-        return Ok(1);
-    }
-    Ok(0)
-}
+// pub fn ipv4_compare_str(ipv4: &str, other_ipv4: &str) -> Result<i8, ()> {
+//     let ipv4 = ipv4_to_u32(ipv4)?;
+//     let other_ipv4 = ipv4_to_u32(other_ipv4)?;
+//     if ipv4 < other_ipv4 {
+//         return Ok(-1);
+//     } else if other_ipv4 > ipv4 {
+//         return Ok(1);
+//     }
+//     Ok(0)
+// }
 
 pub fn ipv4_compare_u32(ipv4: u32, other_ipv4: u32) -> i8 {
     if ipv4 < other_ipv4 {

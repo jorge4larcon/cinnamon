@@ -2,11 +2,12 @@ extern crate serde_json;
 extern crate regex;
 
 use std::collections;
-use std::net;
 use std::fmt;
+use std::cmp;
 use crate::ipparser;
 use std::convert::TryFrom;
 
+#[derive(Eq, Clone)]
 pub struct Client {
     pub ipv4_addr: u32,
     pub port: u16,
@@ -15,7 +16,39 @@ pub struct Client {
     pub drop_votes: u8
 }
 
+impl cmp::Ord for Client {
+    fn cmp(&self, other: &Self) -> cmp::Ordering {
+        self.ipv4_addr.cmp(&other.ipv4_addr)
+    }
+}
+
+impl cmp::PartialOrd for Client {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl cmp::PartialEq for Client {
+    fn eq(&self, other: &Self) -> bool {
+        self.ipv4_addr == other.ipv4_addr
+    }
+}
+
+impl fmt::Display for Client {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.get_only_by_mac {
+            write!(f, "{} {} MAC-ONLY PORT: {} DROP-VOTES: {}", self.username, ipparser::u32_to_ipv4(self.ipv4_addr), self.port, self.drop_votes)
+        } else {
+            write!(f, "{} {} PORT: {} DROP-VOTES: {}", self.username, ipparser::u32_to_ipv4(self.ipv4_addr), self.port, self.drop_votes)
+        }
+    }  
+}
+
 impl Client {
+
+    pub fn get_ipv4_addr(&self) -> u32 {
+        self.ipv4_addr
+    }
 
     pub fn set_drop_votes(&mut self, dv: u8) {
         self.drop_votes = dv;        
@@ -32,6 +65,14 @@ impl Client {
             return username_regex.is_match(username);
         }
         false
+    }
+
+    pub fn username_contains(&self, pattern: &str) -> bool {
+        self.username.contains(pattern)
+    }
+
+    pub fn username_contains_ignore_case(&self, pattern: &str) -> bool {        
+        self.username.to_lowercase().contains(&pattern.to_lowercase())
     }
 
     pub fn from_json_value_with_no_drop_votes(val: &serde_json::Value) -> Option<Client> {
@@ -181,20 +222,102 @@ impl Client {
     }
 }
 
-impl fmt::Display for Client {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.get_only_by_mac {
-            write!(f, "{} {} MAC-ONLY PORT: {} DROP-VOTES: {}", self.username, ipparser::u32_to_ipv4(self.ipv4_addr), self.port, self.drop_votes)
-        } else {
-            write!(f, "{} {} PORT: {} DROP-VOTES: {}", self.username, ipparser::u32_to_ipv4(self.ipv4_addr), self.port, self.drop_votes)
-        }
-    }  
-}
-
 pub struct ClientsMap {
     clients: collections::BTreeMap<ipparser::MacAddress, Client>
 }
 
-impl ClientsMap {
-    
+impl fmt::Display for ClientsMap {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.clients.is_empty() {
+            write!(f, "This ClientsMap is empty")
+        } else {
+            let mut clients_map = String::default();
+            for (mac, client) in self.clients.iter() {
+                clients_map.push_str(&format!("{} => {}\n", mac, client));
+            }
+            if self.clients.len() > 1 {
+                clients_map.push_str(&format!("{} clients", self.clients.len()));
+            } else {
+                clients_map.push_str("Just 1 client :/");
+            }
+            write!(f, "{}", clients_map)
+        }
+    }  
 }
+
+impl ClientsMap {
+    pub fn new() -> ClientsMap {
+        ClientsMap { clients: collections::BTreeMap::new() }
+    }
+
+    pub fn insert(&mut self, mac: ipparser::MacAddress, client: Client) {
+        if let Some(existing_client) = self.clients.get(&mac) { // MAC exists
+            if *existing_client == client { // IPv4 also exists
+                // Do nothing... I think I should do an update here, maybe the client changed his name
+                self.clients.insert(mac, client);
+                return;
+            } else { // IPv4 does not exist
+                // Do an update
+                self.clients.insert(mac, client);
+                return;
+            }
+        } else { // MAC does not exist
+            let i_should_replace: Option<ipparser::MacAddress>;            
+            if let Some((mac_key, _client_value)) = self.clients.iter().find(|(_mac_addr, existing_client)| **existing_client == client) { // IPv4 exists
+                // Replace the existing client with the new one
+                i_should_replace = Option::Some(mac_key.clone());                
+            } else { // IPv4 neither exists
+                // Insert the new client
+                self.insert(mac, client);
+                return;
+            }
+
+            if let Some(mac) = i_should_replace {
+                self.clients.remove(&mac);
+                self.clients.insert(mac, client);
+            }
+        }
+    }
+
+    pub fn get_clone(&self, mac: &ipparser::MacAddress) -> Option<Client> {
+        match self.clients.get(mac) {
+            Some(client) => Some(client.clone()),
+            None => None
+        }
+    }
+
+    pub fn usernames_that_contain(&self, start_index: usize, size: usize, pattern: &str) -> (Vec<Client>, usize) {
+        let mut clients: Vec<Client> = Vec::new();
+        for (index, client) in self.clients.values().enumerate() {
+            if index >= start_index {
+                if clients.len() == size {
+                    return (clients, index);
+                } else if client.username_contains_ignore_case(pattern) {
+                    clients.push(client.clone());
+                }                
+            }
+        }
+        (clients, self.clients.len() - 1)
+    }
+
+    pub fn drop_vote_by_mac(&mut self, mac: &ipparser::MacAddress, drop_votes: u8, max_drop_votes: u8) {
+        let actual_drop_votes;
+        if let Some(client) = self.clients.get_mut(mac) {
+            actual_drop_votes = client.add_drop_votes(drop_votes);        
+        } else { return; }
+        if actual_drop_votes >= max_drop_votes {
+            self.clients.remove(mac);
+        }
+    }
+
+    pub fn drop_vote_by_ipv4(&mut self, ipv4: u32, drop_votes: u8, max_drop_votes: u8) {        
+        let mac;
+        if let Some((mac_key, _client_value)) = self.clients.iter().find(|(_mac, client)| client.get_ipv4_addr() == ipv4) {
+            mac = mac_key.clone();
+        } else {  return; }
+        self.drop_vote_by_mac(&mac, drop_votes, max_drop_votes);
+    }
+
+}
+
+
