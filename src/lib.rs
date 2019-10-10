@@ -1,3 +1,5 @@
+extern crate log;
+
 pub mod ipparser;
 pub mod config;
 pub mod clients;
@@ -6,6 +8,6 @@ pub mod server;
 
 
 pub fn run_start_command(start_config: config::StartConfig) {
-    let mut server = server::Server::from_start_config(&start_config);
-    
+    log::info!("{}", start_config);
+    // let mut server = server::Server::from_start_config(&start_config);
 }
