@@ -1,6 +1,7 @@
 extern crate serde_json;
 
 use std::net;
+use crate::ipparser;
 
 // La funcion tomara un string y lo transformara en un
 // Enum de client request
@@ -11,17 +12,18 @@ pub enum Request {
 }
 
 pub enum AdminRequest {
+    Base
 }
 
 pub enum ClientRequest {
-    GET_BY_MAC {
+    GetByMac {
         // user: String,
         password: String,
         // method: get
         // how: mac
         mac: String
     },
-    GET_BY_USERNAME {
+    GetByUsername {
         // user: String,
         password: String,
         // method: get
@@ -29,18 +31,34 @@ pub enum ClientRequest {
         username: String,
         start_index: usize
     },
-    DROP {
-        
+    Drop {
+        // user
+        password: String,
+        ip: net::Ipv4Addr
     },
-    SIGN_UP {}
+    SignUP {
+        password: String,
+        username: String,
+        mac: ipparser::MacAddress,
+        port: u16,
+        get_only_by_mac: bool        
+    }
 }
 
-pub fn describe(request: &str, peer_addr: &net::SocketAddr) -> String {
-    if let Ok(request) = serde_json::from_str::<serde_json::Value>(request) {
-
-    } else {
-
+impl Request {
+    pub fn from(request_str: &str) -> Option<Request> {
+        if let Ok(request) = serde_json::from_str::<serde_json::Value>(request_str) {
+            if let Some(user) = request.get("user") {
+                if let Some(_user) = user.as_str() {
+                    return Some(Request::Admin(AdminRequest::Base));
+                }
+            }
+        }
+        None
     }
+}
+
+pub fn describe(_request: &str, _peer_addr: &net::SocketAddr) {
 }
 
 /*

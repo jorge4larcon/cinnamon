@@ -64,8 +64,8 @@ impl Server {
 pub fn handle_client(mut stream: net::TcpStream, peer_addr: net::SocketAddr) {
     let mut buffer = [0; 1024];
     if let Ok(bytes_read) = stream.read(&mut buffer) {
-        let request = String::from_utf8_lossy(&buffer[..bytes_read]);
-        
+        let _request = String::from_utf8_lossy(&buffer[..bytes_read]);
+
     } else {
         log::error!("I couldn't read the message of {} :/", peer_addr.ip());
     }
