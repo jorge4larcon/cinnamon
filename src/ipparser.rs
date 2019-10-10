@@ -16,6 +16,13 @@ impl MacAddress {
             false => None
         }
     }
+
+    pub fn new_from_str(mac: &str) -> Option<MacAddress> {
+        if let Some(mac) = mac_to_u64(mac) {
+            return Some( MacAddress { mac } );
+        }
+        None
+    }
 }
 
 impl fmt::Display for MacAddress {
@@ -231,7 +238,7 @@ pub fn is_mac_str(mac: &str) -> bool {
     false
 }
 
-pub fn mac_to_u64(mac: &str) -> Result<u64, ()> {
+pub fn mac_to_u64(mac: &str) -> Option<u64> {
     if is_mac_str(mac) {
         let m =  if mac.contains("-") {
             mac.replace("-", "")
@@ -240,9 +247,9 @@ pub fn mac_to_u64(mac: &str) -> Result<u64, ()> {
         } else {
             mac.replace(":", "")
         };
-        return Ok(u64::from_str_radix(m.as_str(), 16).unwrap());
+        return Some(u64::from_str_radix(m.as_str(), 16).unwrap());
     }
-    return Err(());
+    return None;
 }
 
 // Only 3 separators: `.`, `:` and `-`
@@ -259,16 +266,16 @@ pub fn u64_to_mac(mac: u64, sep: char) -> Option<String> {
     None
 }
 
-pub fn mac_compare_str(mac: &str, other_mac: &str) -> Result<i8, ()> {
-    let mac = mac_to_u64(mac)?;
-    let other_mac = mac_to_u64(other_mac)?;
-    if mac < other_mac {
-        return Ok(-1);
-    } else if other_mac > mac {
-        return Ok(1);
-    }
-    Ok(0)
-}
+// pub fn mac_compare_str(mac: &str, other_mac: &str) -> Result<i8, ()> {
+//     let mac = mac_to_u64(mac)?;
+//     let other_mac = mac_to_u64(other_mac)?;
+//     if mac < other_mac {
+//         return Ok(-1);
+//     } else if other_mac > mac {
+//         return Ok(1);
+//     }
+//     Ok(0)
+// }
 
 pub fn mac_compare_u64(mac: u64, other_mac: u64) -> Result<i8, ()> {
     if is_mac_u64(mac) && is_mac_u64(other_mac) {

@@ -12,7 +12,9 @@ pub enum Request {
 }
 
 pub enum AdminRequest {
-    Base
+    Get,
+    Drop,
+    Set
 }
 
 pub enum ClientRequest {
@@ -21,7 +23,7 @@ pub enum ClientRequest {
         password: String,
         // method: get
         // how: mac
-        mac: String
+        mac: ipparser::MacAddress
     },
     GetByUsername {
         // user: String,
@@ -48,11 +50,66 @@ pub enum ClientRequest {
 impl Request {
     pub fn from(request_str: &str) -> Option<Request> {
         if let Ok(request) = serde_json::from_str::<serde_json::Value>(request_str) {
-            if let Some(user) = request.get("user") {
-                if let Some(_user) = user.as_str() {
-                    return Some(Request::Admin(AdminRequest::Base));
+            let password;
+            let user;
+            if let Some(pass) = request.get("password") {
+                if let Some(pass) = pass.as_str() {
+                    password = String::from(pass);
+                    if let Some(usr) = request.get("user") {
+                        if let Some(usr) = usr.as_str() {
+                            match usr.to_lowercase().as_str() {
+                                "admin" | "client" => user = String::from(usr.to_lowercase()),
+                                _ => return None
+                            }
+                            if let Some(method) = request.get("method") {
+                                if let Some(method) = method.as_str() {
+                                    match method {
+                                        "get" => {
+                                            if user == "admin" { // AdminGet
+                                                return Some(Request::Admin(AdminRequest::Get));
+                                            } else { // ClientGet
+                                                if let Some(how) = request.get("how") {
+                                                    if let Some(how) = how.as_str() {
+                                                        match how.to_lowercase().as_str() {
+                                                            "mac" => { // ClientRequest::GetByMac
+                                                                if let Some(mac) = request.get("mac") {
+                                                                    if let Some(mac) = mac.as_str() {
+                                                                        if let Some(mac) = ipparser::MacAddress::new_from_str(mac) {
+                                                                            return Some(Request::Client(ClientRequest::GetByMac{ password, mac}));
+                                                                        }
+                                                                    }
+                                                                }
+                                                            },
+                                                            "username" => { // ClientRequest::GetByUsername
+
+                                                            },
+                                                            _ => return None
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "drop" => {
+                                            if user == "admin" { // AdminDrop
+
+                                            } else { // ClientDrop
+
+                                            }
+                                        },
+                                        "set" => { // Admin only
+                                            if user != "admin" { return None; }
+                                        }, 
+                                        "sign_up" => { // Client only
+                                            if user != "client" { return None; }
+                                        },
+                                        _ => return None
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-            }
+            }            
         }
         None
     }
@@ -60,9 +117,3 @@ impl Request {
 
 pub fn describe(_request: &str, _peer_addr: &net::SocketAddr) {
 }
-
-/*
-
-192.168.1.70 says GET 
-
-*/
