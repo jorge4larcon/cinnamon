@@ -4,6 +4,7 @@ pub mod ipparser;
 pub mod config;
 pub mod clients;
 pub mod requests;
+pub mod replies;
 pub mod server;
 
 pub fn run_start_command(start_config: config::StartConfig) {
