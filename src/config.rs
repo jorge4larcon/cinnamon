@@ -2,6 +2,7 @@ extern crate clap;
 
 use std::net;
 use std::fmt;
+use crate::ipparser;
 
 pub struct StartConfig {
     pub address: net::SocketAddrV4,    
@@ -28,14 +29,16 @@ impl fmt::Display for StartConfig {
 }
 
 impl StartConfig {
-    pub fn new(matche
-    
-    
-    
-    
-    s: clap::ArgMatches) -> Option<StartConfig> {
+    pub fn new(matches: clap::ArgMatches) -> Option<StartConfig> {
         let address: net::SocketAddrV4;
-        if let Some(matches) = matches.subcommand_matches("start") {
+        if let Some(matches) = matches.subcommand_matches("start") {            
+
+            if let Some(addr) = matches.value_of("address") {
+                if let Some(addr) = ipparser::sockaddrv4str_to_sockaddrv4(addr) {
+                    address = addr;
+                } else { return None; }
+            } else { return None; }
+
             let addr = matches.value_of("address").unwrap();
         }
         None

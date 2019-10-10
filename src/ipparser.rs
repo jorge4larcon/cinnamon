@@ -302,6 +302,22 @@ pub fn ipv6_compare_u128(ipv6: u128, other_ipv6: u128) -> i8 {
     0
 }
 
+pub fn sockaddrv4str_to_sockaddrv4(sockaddrv4: &str) -> Option<SocketAddrV4> {
+    if let Ok(sockaddr) = SocketAddrV4::from_str(sockaddrv4) {
+        Some(sockaddr)
+    } else {
+        None
+    }
+}
+
+pub fn sockaddrv6str_to_ipv6sockaddr(sockaddrv6: &str) -> Option<SocketAddrV6> {
+    if let Ok(sockaddr) = SocketAddrV6::from_str(sockaddrv6) {
+        Some(sockaddr)
+    } else {
+        None
+    }
+}
+
 // pub fn ipv4_compare_str(ipv4: &str, other_ipv4: &str) -> Result<i8, ()> {
 //     let ipv4 = ipv4_to_u32(ipv4)?;
 //     let other_ipv4 = ipv4_to_u32(other_ipv4)?;
