@@ -150,7 +150,7 @@ fn main() {
     match config::StartConfig::new(matches) {
         Some(config) => start_command_config = config,
         None => {
-            eprintln!("I did not understand your command :/");
+            eprintln!("WTF? I didn't understand your command :/");
             process::exit(1);
         }
     }

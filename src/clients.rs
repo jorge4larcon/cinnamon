@@ -300,6 +300,22 @@ impl ClientsMap {
         (clients, self.clients.len() - 1)
     }
 
+    pub fn usernames_that_contain_get_by_mac_only(&self, start_index: usize, size: usize, pattern: &str) -> (Vec<Client>, usize) {
+        let mut clients: Vec<Client> = Vec::new();
+        for (index, client) in self.clients.values().enumerate() {
+            if index >= start_index {
+                if clients.len() == size {
+                    return (clients, index);
+                } else if client.username_contains_ignore_case(pattern) {
+                    if !client.get_only_by_mac {
+                        clients.push(client.clone());
+                    }                    
+                }                
+            }
+        }
+        (clients, self.clients.len() - 1)            
+    }
+
     pub fn drop_vote_by_mac(&mut self, mac: &ipparser::MacAddress, drop_votes: u8, max_drop_votes: u8) {
         let actual_drop_votes;
         if let Some(client) = self.clients.get_mut(mac) {
