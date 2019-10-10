@@ -75,13 +75,23 @@ impl Request {
                                                                 if let Some(mac) = request.get("mac") {
                                                                     if let Some(mac) = mac.as_str() {
                                                                         if let Some(mac) = ipparser::MacAddress::new_from_str(mac) {
-                                                                            return Some(Request::Client(ClientRequest::GetByMac{ password, mac}));
+                                                                            return Some(Request::Client(ClientRequest::GetByMac { password, mac} ));
                                                                         }
                                                                     }
                                                                 }
                                                             },
                                                             "username" => { // ClientRequest::GetByUsername
-
+                                                                if let Some(username) = request.get("username") {
+                                                                    if let Some(username) = username.as_str() {
+                                                                        if let Some(start_index) = request.get("start_index") {
+                                                                            if let Some(start_index) = start_index.as_u64() {
+                                                                                let start_index = start_index as usize;
+                                                                                let username = String::from(username);
+                                                                                return Some(Request::Client(ClientRequest::GetByUsername { password, username, start_index } ))
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
                                                             },
                                                             _ => return None
                                                         }
@@ -91,9 +101,15 @@ impl Request {
                                         },
                                         "drop" => {
                                             if user == "admin" { // AdminDrop
-
+                                                return Some(Request::Admin(AdminRequest::Drop));
                                             } else { // ClientDrop
-
+                                                if let Some(ip) = request.get("ip") {
+                                                    if let Some(ip) = ip.as_str() {
+                                                        if let Some(ip) = ipparser::str_to_ipv4addr(ip) {
+                                                            return Some(Request::Client(ClientRequest::Drop { password, ip } ))
+                                                        }
+                                                    }
+                                                }
                                             }
                                         },
                                         "set" => { // Admin only
@@ -101,6 +117,14 @@ impl Request {
                                         }, 
                                         "sign_up" => { // Client only
                                             if user != "client" { return None; }
+                                            if let Some(username) = request.get("username") {
+                                                if let Some(username) = username.as_str() {
+                                                    let username = String::from(username);
+                                                    if let Some(mac) = request.get("mac") {
+                                                        
+                                                    }
+                                                }
+                                            }
                                         },
                                         _ => return None
                                     }

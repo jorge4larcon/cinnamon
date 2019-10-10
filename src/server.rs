@@ -20,8 +20,6 @@ pub struct Server {
     pub drop_verification: bool
 }
 
-
-
 impl Server {
     pub fn from_start_config(start_config: &config::StartConfig) -> Server {
         Server {
