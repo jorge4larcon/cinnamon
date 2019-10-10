@@ -2,6 +2,8 @@ extern crate clap;
 
 use cinnamon::config;
 use cinnamon::ipparser;
+use cinnamon::run_start_command;
+use std::process;
 use clap::{Arg, App, SubCommand, AppSettings};
 
 
@@ -146,7 +148,16 @@ fn main() {
 
     let start_command_config: config::StartConfig;
     match config::StartConfig::new(matches) {
-        Some(config) => 
+        Some(config) => start_command_config = config,
+        None => {
+            eprintln!("I did not understand your command :/");
+            process::exit(1);
+        }
     }
 
+    if let Err(_) = config::setup_logging() {
+        eprintln!("Failed to set up logging, maybe there's one logger already...")
+    }
+
+    run_start_command(start_command_config);
 }
