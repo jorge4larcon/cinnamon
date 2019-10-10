@@ -1,7 +1,9 @@
 extern crate serde_json;
 
 use std::net;
+use std::fmt;
 use crate::ipparser;
+use std::convert::TryFrom;
 
 // La funcion tomara un string y lo transformara en un
 // Enum de client request
@@ -9,42 +11,6 @@ use crate::ipparser;
 pub enum Request {
     Admin(AdminRequest),
     Client(ClientRequest)
-}
-
-pub enum AdminRequest {
-    Get,
-    Drop,
-    Set
-}
-
-pub enum ClientRequest {
-    GetByMac {
-        // user: String,
-        password: String,
-        // method: get
-        // how: mac
-        mac: ipparser::MacAddress
-    },
-    GetByUsername {
-        // user: String,
-        password: String,
-        // method: get
-        // how: username
-        username: String,
-        start_index: usize
-    },
-    Drop {
-        // user
-        password: String,
-        ip: net::Ipv4Addr
-    },
-    SignUP {
-        password: String,
-        username: String,
-        mac: ipparser::MacAddress,
-        port: u16,
-        get_only_by_mac: bool        
-    }
 }
 
 impl Request {
@@ -121,7 +87,21 @@ impl Request {
                                                 if let Some(username) = username.as_str() {
                                                     let username = String::from(username);
                                                     if let Some(mac) = request.get("mac") {
-                                                        
+                                                        if let Some(mac) = mac.as_str() {
+                                                            if let Some(mac) = ipparser::MacAddress::new_from_str(mac) {
+                                                                if let Some(port) = request.get("port") {
+                                                                    if let Some(port) = port.as_u64() {
+                                                                        if let Ok(port) = u16::try_from(port) {
+                                                                            if let Some(gobm) = request.get("get_only_by_mac") {
+                                                                                if let Some(get_only_by_mac) = gobm.as_bool() {
+                                                                                    return Some(Request::Client(ClientRequest::SignUp { password, username, mac, port, get_only_by_mac } ));
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
@@ -139,5 +119,72 @@ impl Request {
     }
 }
 
-pub fn describe(_request: &str, _peer_addr: &net::SocketAddr) {
+impl fmt::Display for Request {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Request::Admin(admin_request) => {
+                match admin_request {
+                    AdminRequest::Get => write!(f, "ADMIN Get"),
+                    AdminRequest::Drop => write!(f, "ADMIN Drop"),
+                    AdminRequest::Set => write!(f, "ADMIN Set")
+                }
+            },
+            Request::Client(client_request) => {
+                match client_request {                    
+                    ClientRequest::GetByMac { password: _password, mac } => {
+                        write!(f, "CLIENT GET {}", mac)
+                    },
+                    ClientRequest::GetByUsername { password: _password, username, start_index } => {
+                        write!(f, "CLIENT GET \"{}\" starting from {}", username, start_index)
+                    },
+                    ClientRequest::Drop { password: _password, ip } => {
+                        write!(f, "CLIENT DROP {}", ip)
+                    },
+                    ClientRequest::SignUp { password: _password, username, mac, port, get_only_by_mac } => {
+                        if *get_only_by_mac {
+                            write!(f, "CLIENT SIGN-UP \"{}\" {} PORT: {} MAC-ONLY", username, mac, port)
+                        } else {
+                            write!(f, "CLIENT SIGN-UP \"{}\" {} PORT: {}", username, mac, port)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+pub enum AdminRequest {
+    Get,
+    Drop,
+    Set
+}
+
+pub enum ClientRequest {
+    GetByMac {
+        // user: String,
+        password: String,
+        // method: get
+        // how: mac
+        mac: ipparser::MacAddress
+    },
+    GetByUsername {
+        // user: String,
+        password: String,
+        // method: get
+        // how: username
+        username: String,
+        start_index: usize
+    },
+    Drop {
+        // user
+        password: String,
+        ip: net::Ipv4Addr
+    },
+    SignUp {
+        password: String,
+        username: String,
+        mac: ipparser::MacAddress,
+        port: u16,
+        get_only_by_mac: bool        
+    }
 }
