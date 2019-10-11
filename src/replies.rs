@@ -26,17 +26,17 @@ impl fmt::Display for ReplyErrCodes {
     }
 }
 
-pub fn reply_admin_getbymac(mac: &ipparser::MacAddress, clients_map: &clients::ClientsMap, guilty: &net::SocketAddr) -> String {
+pub fn reply_admin_getbymac(mac: &ipparser::MacAddress, clients_map: &clients::ClientsMap, _guilty: &net::SocketAddr) -> String {
     if let Some(client) = clients_map.get_by_mac(mac) {
-        log::info!("{} was sent to {}", mac, guilty);
+        log::info!("{} was sent to the admin", mac);
         format!("{{\"client\":{}}}", client.to_json_string_without_drop_votes_get_only_by_mac())
     } else {
-        log::info!("{} doesn't exist, but was requested by {}", mac, guilty);
+        log::info!("{} doesn't exist, but was requested by the admin", mac);
         format!("{}", ReplyErrCodes::ClientDoesNotExist)
     }
 }
 
-pub fn reply_admin_getbyusername(username: &str, clients_map: &clients::ClientsMap, list_size: u16, start_index: usize, guilty: &net::SocketAddr) -> String {
+pub fn reply_admin_getbyusername(username: &str, clients_map: &clients::ClientsMap, list_size: u16, start_index: usize, _guilty: &net::SocketAddr) -> String {
     if let Ok(list_size) = usize::try_from(list_size) {
         let (clients, end_index) = clients_map.usernames_that_contain_get_by_mac_only(start_index, list_size, username);
         if !clients.is_empty() {
@@ -47,20 +47,21 @@ pub fn reply_admin_getbyusername(username: &str, clients_map: &clients::ClientsM
                 json_array.push(',');
             }
             json_array.push_str("]");
-            log::info!("{} client(s) named like \"{}\" were sent to {}", clients_len, username, guilty);
+            log::info!("{} client(s) named like \"{}\" were sent to the admin", clients_len, username);
             return format!("{{\"clients\":{},\"end_index\":{}}}", json_array, end_index);
         } else {
-            log::info!("No clients named like \"{}\" were sent to {}", username, guilty);
+            log::info!("No clients named like \"{}\" were sent to the admin", username);
             return format!("{}", ReplyErrCodes::ClientDoesNotExist);
         }        
     } else {
-        log::error!("The client {} tried to get a list of usernames, but there was an internal error casting an u16 to an usize and was rejected", guilty);
+        log::error!("The admin tried to get a list of usernames, but there was an internal error casting an u16 to an usize and was rejected");
         return format!("{}", ReplyErrCodes::UnsupportedListSize);
     }
 }
 
-pub fn reply_admin_getbyindex(start_index: usize, end_index: usize, clients_map: &clients::ClientsMap, guilty: &net::SocketAddr) -> String {
+pub fn reply_admin_getbyindex(start_index: usize, end_index: usize, clients_map: &clients::ClientsMap, _guilty: &net::SocketAddr) -> String {
     let clients_range = clients_map.range(start_index, end_index);
+    let list_len = clients_range.len();
     if !clients_range.is_empty() {
         let mut clients_json_array = String::from("[");
         for (mac, client) in clients_range {
@@ -68,7 +69,7 @@ pub fn reply_admin_getbyindex(start_index: usize, end_index: usize, clients_map:
             clients_json_array.push(',');
         }
         clients_json_array.push(']');
-        log::info!("The admin requested a list of clients by the range [{}, {}) [{} client(s)]", start_index, end_index, clients_range.len());
+        log::info!("The admin requested a list of clients by the range [{}, {}) [{} client(s)]", start_index, end_index, list_len);
         return format!("{{\"clients\":{}}}", clients_json_array);
     } else {
         log::info!("The admin requested a list of clients by the range [{}, {}), but there were not clients in that range", start_index, end_index);
