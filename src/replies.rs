@@ -1,3 +1,5 @@
+// TODO: to make drop or get the client must be signed up
+
 extern crate log;
 
 use crate::clients;
@@ -24,43 +26,51 @@ impl fmt::Display for ReplyErrCodes {
     }
 }
 
-pub fn reply_client_getbymac(mac: &ipparser::MacAddress, clients_map: &clients::ClientsMap) -> String {
+pub fn reply_client_getbymac(mac: &ipparser::MacAddress, clients_map: &clients::ClientsMap, guilty: &net::SocketAddr) -> String {
     if let Some(client) = clients_map.get_by_mac(mac) {
+        log::info!("{} was sent to {}", mac, guilty);
         format!("{{\"client\":{}}}", client.to_json_string_without_drop_votes())
     } else {
+        log::info!("{} doesn't exist, but was requested by {}", mac, guilty);
         format!("{}", ReplyErrCodes::ClientDoesNotExist)
     }
 }
 
-pub fn reply_client_getbyusername(username: &str, clients_map: &clients::ClientsMap, list_size: u16, start_index: usize) -> String {
+pub fn reply_client_getbyusername(username: &str, clients_map: &clients::ClientsMap, list_size: u16, start_index: usize, guilty: &net::SocketAddr) -> String {
     if let Ok(list_size) = usize::try_from(list_size) {
         let (clients, end_index) = clients_map.usernames_that_contain_get_by_mac_only(start_index, list_size, username);
         if !clients.is_empty() {
+            let clients_len = clients.len();
             let mut json_array = String::from("[");
             for client in clients {
                 json_array.push_str(client.to_json_string_without_drop_votes().as_str());
                 json_array.push(',');
             }
             json_array.push_str("]");
+            log::info!("{} client(s) named like \"{}\" were sent to {}", clients_len, username, guilty);
             return format!("{{\"clients\":{},\"end_index\":{}}}", json_array, end_index);
         } else {
+            log::info!("No clients named like \"{}\" were sent to {}", username, guilty);
             return format!("{}", ReplyErrCodes::ClientDoesNotExist);
-        }
+        }        
     } else {
+        log::error!("The client {} tried to get a list of usernames, but there was an internal error casting an u16 to an usize and was rejected", guilty);
         return format!("{}", ReplyErrCodes::UnsupportedListSize);
     }
 }
 
-pub fn reply_client_drop(ip: &net::Ipv4Addr, clients_map: &mut clients::ClientsMap, max_drop_votes: u8) -> String {
+pub fn reply_client_drop(ip: &net::Ipv4Addr, clients_map: &mut clients::ClientsMap, max_drop_votes: u8, guilty: &net::SocketAddr) -> String {
     let ipv4 = ipparser::ipv4addr_to_u32(ip);
     if clients_map.exists_by_ipv4(ipv4) {
         if clients_map.drop_vote_by_ipv4(ipv4, 1, max_drop_votes) {
-            log::info!("Client {} was dropped out", ip);
+            log::info!("The client {} was dropped out by {}", ip, guilty);
             return format!("{{\"result\":\"Client was dropped out\"}}");
-        } else {
+        } else {            
+            log::info!("The client {} tried to drop out {}", guilty, ip);
             return format!("{{\"result\":\"Client was not dropped out\"}}");
         }
     } else {
+        log::info!("The client {} doesn't exist but {} tried to drop it", ip, guilty);
         return format!("{}", ReplyErrCodes::ClientDoesNotExist);
     }
 }
@@ -84,9 +94,11 @@ pub fn reply_client_signup(clients_map: &mut clients::ClientsMap, username: &str
                 }
             }
         } else {
+            log::info!("Server capacity ({} clients) if full, client {} was rejected", capaciy, ip);
             return format!("{}", ReplyErrCodes::ServerCapacityIsFull);
         }
     } else {
+        log::error!("The client {} tried to sign in, but there was an internal error casting an u16 to an usize and was rejected", ip);
         return format!("{}", ReplyErrCodes::ServerInternalError);
     }
 }

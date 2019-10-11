@@ -75,19 +75,19 @@ impl Server {
                                                 requests::ClientRequest::GetByMac { password: client_password, mac } => {
                                                     request_type = "Client::GetByMac";
                                                     if self.password == client_password {
-                                                        reply = Some(replies::reply_client_getbymac(&mac, &self.clients));
+                                                        reply = Some(replies::reply_client_getbymac(&mac, &self.clients, &peer_addr));
                                                     } else { log::info!("The client {} doesn't know the password", peer_addr); }
                                                 },
                                                 requests::ClientRequest::GetByUsername { password: client_password, username, start_index } => {
                                                     request_type = "Client::GetByUsername";
                                                     if self.password == client_password {
-                                                        reply = Some(replies::reply_client_getbyusername(&username, &self.clients, self.list_size, start_index));
+                                                        reply = Some(replies::reply_client_getbyusername(&username, &self.clients, self.list_size, start_index, &peer_addr));
                                                     } else { log::info!("The client {} doesn't know the password", peer_addr); }
                                                 },
                                                 requests::ClientRequest::Drop { password: client_password, ip } => {
                                                     request_type = "Client::Drop";
                                                     if self.password == client_password {
-                                                        reply = Some(replies::reply_client_drop(&ip, &mut self.clients, self.drop_votes));
+                                                        reply = Some(replies::reply_client_drop(&ip, &mut self.clients, self.drop_votes, &peer_addr));
                                                     } else { log::info!("The client {} doesn't know the password", peer_addr); }
                                                     log::debug!("Client's DB:\n{}", self.clients);
                                                 },
