@@ -32,37 +32,31 @@ impl fmt::Display for StartConfig {
 }
 
 impl StartConfig {
-    pub fn new(matches: clap::ArgMatches) -> Option<StartConfig> {
-        println!("Here 1");
+    pub fn new(matches: clap::ArgMatches) -> Option<StartConfig> {        
         if let Some(matches) = matches.subcommand_matches("start") {            
             let address: net::SocketAddrV4;
             if let Some(addr) = matches.value_of("address") {
                 if let Some(addr) = ipparser::sockaddrv4str_to_sockaddrv4(addr) {
                     address = addr;
                 } else { return None; }
-            } else { return None; }
-            println!("Here 2");
+            } else { return None; }            
 
             let drop_votes: u8;
-            if let Some(dv) = matches.value_of("drop-votes") {
-                println!("Here 2.1");
+            if let Some(dv) = matches.value_of("drop-votes") {                
                 if let Ok(dv) = dv.parse::<u8>() {
                     drop_votes = dv;
                 } else { return None; }
-            } else { return None; }
-            println!("Here 3");
+            } else { return None; }            
 
             let password: String;
             if let Some(pass) = matches.value_of("password") {
                 password = String::from(pass);
             } else { return None; }
-            println!("Here 4");
 
             let key: String;
             if let Some(k) = matches.value_of("key") {
                 key = String::from(k);
-            } else { return None; }
-            println!("Here 5");
+            } else { return None; }            
 
             let capacity: u16;
             if let Some(c) = matches.value_of("capacity") {
@@ -70,7 +64,6 @@ impl StartConfig {
                     capacity = c;
                 }  else { return None; }
             } else { return None; }
-            println!("Here 6");
             
             let list_size: u16;
             if let Some(ls) = matches.value_of("list-size") {
@@ -78,10 +71,8 @@ impl StartConfig {
                     list_size = ls;
                 } else { return None; }
             } else { return None; }
-            println!("Here 7");
 
             let drop_verification = matches.is_present("drop-verification");
-            println!("Here 8");
 
             return Some( StartConfig { address, drop_votes, password, key, capacity, list_size, drop_verification } );
         }
@@ -104,7 +95,7 @@ pub fn setup_logging() -> Result<(), fern::InitError> {
                 message
             ))
         })
-        .level(log::LevelFilter::Debug)
+        .level(log::LevelFilter::Info)
         .chain(std::io::stdout())        
         .apply()?;        
     Ok(())

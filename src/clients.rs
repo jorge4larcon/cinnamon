@@ -245,45 +245,60 @@ impl fmt::Display for ClientsMap {
     }  
 }
 
+pub enum InsertionType {
+    Update,
+    Replace,
+    Insert    
+}
+
 impl ClientsMap {
     pub fn new() -> ClientsMap {
         ClientsMap { clients: collections::BTreeMap::new() }
     }
 
-    pub fn insert(&mut self, mac: ipparser::MacAddress, client: Client) {
+    pub fn insert(&mut self, mac: &ipparser::MacAddress, client: &Client) -> InsertionType {
         if let Some(existing_client) = self.clients.get(&mac) { // MAC exists
-            if *existing_client == client { // IPv4 also exists
+            if *existing_client == *client { // IPv4 also exists
                 // Do nothing... I think I should do an update here, maybe the client changed his name
-                self.clients.insert(mac, client);
-                return;
+                self.clients.insert(mac.clone(), client.clone());
+                return InsertionType::Update;
             } else { // IPv4 does not exist
                 // Do an update
-                self.clients.insert(mac, client);
-                return;
+                self.clients.insert(mac.clone(), client.clone());
+                return InsertionType::Update;
             }
-        } else { // MAC does not exist
-            let i_should_replace: Option<ipparser::MacAddress>;            
-            if let Some((mac_key, _client_value)) = self.clients.iter().find(|(_mac_addr, existing_client)| **existing_client == client) { // IPv4 exists
+        } else { // MAC does not exist            
+            let repl_mac: ipparser::MacAddress;
+            if let Some((mac_key, _client_value)) = self.clients.iter().find(|(_mac_addr, existing_client)| **existing_client == *client) { // IPv4 exists
                 // Replace the existing client with the new one
-                i_should_replace = Option::Some(mac_key.clone());                
-            } else { // IPv4 neither exists
+                repl_mac = mac_key.clone(); // ------------- The code continues in `self.clients.remove()`
+            } else { // IPv4 neither exists                 
                 // Insert the new client
-                self.insert(mac, client);
-                return;
-            }
-
-            if let Some(mac) = i_should_replace {
-                self.clients.remove(&mac);
-                self.clients.insert(mac, client);
-            }
+                self.clients.insert(mac.clone(), client.clone());
+                return InsertionType::Insert;
+            }            
+            self.clients.remove(&repl_mac);
+            self.clients.insert(mac.clone(), client.clone());
+            return InsertionType::Replace;        
         }
     }
 
-    pub fn get_clone(&self, mac: &ipparser::MacAddress) -> Option<Client> {
+    pub fn len(&self) -> usize {
+        self.clients.len()
+    }
+
+    pub fn get_by_mac(&self, mac: &ipparser::MacAddress) -> Option<Client> {
         match self.clients.get(mac) {
             Some(client) => Some(client.clone()),
             None => None
         }
+    }
+
+    pub fn exists_by_ipv4(&self, ipv4: u32) -> bool {
+        if let Some((_mac_key, _client_value)) = self.clients.iter().find(|(_mac, client)| client.get_ipv4_addr() == ipv4) {
+            return true;
+        }
+        false
     }
 
     pub fn usernames_that_contain(&self, start_index: usize, size: usize, pattern: &str) -> (Vec<Client>, usize) {
@@ -316,22 +331,24 @@ impl ClientsMap {
         (clients, self.clients.len() - 1)            
     }
 
-    pub fn drop_vote_by_mac(&mut self, mac: &ipparser::MacAddress, drop_votes: u8, max_drop_votes: u8) {
+    pub fn drop_vote_by_mac(&mut self, mac: &ipparser::MacAddress, drop_votes: u8, max_drop_votes: u8) -> bool {
         let actual_drop_votes;
         if let Some(client) = self.clients.get_mut(mac) {
-            actual_drop_votes = client.add_drop_votes(drop_votes);        
-        } else { return; }
+            actual_drop_votes = client.add_drop_votes(drop_votes);
+        } else { return false; }
         if actual_drop_votes >= max_drop_votes {
             self.clients.remove(mac);
+            return true;
         }
+        false
     }
 
-    pub fn drop_vote_by_ipv4(&mut self, ipv4: u32, drop_votes: u8, max_drop_votes: u8) {        
+    pub fn drop_vote_by_ipv4(&mut self, ipv4: u32, drop_votes: u8, max_drop_votes: u8) -> bool {
         let mac;
         if let Some((mac_key, _client_value)) = self.clients.iter().find(|(_mac, client)| client.get_ipv4_addr() == ipv4) {
             mac = mac_key.clone();
-        } else {  return; }
-        self.drop_vote_by_mac(&mac, drop_votes, max_drop_votes);
+        } else {  return false; }
+        return self.drop_vote_by_mac(&mac, drop_votes, max_drop_votes);
     }
 
 }
