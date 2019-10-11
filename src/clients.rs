@@ -174,51 +174,66 @@ impl Client {
     }
 
     pub fn to_json_string(&self) -> String {
+        let ipv4_addr = ipparser::u32_to_ipv4(self.ipv4_addr);
         format!(r#"
             {{
-                "ipv4_addr": {}, 
+                "ipv4_addr": "{}",
                 "port": {},
                 "username": "{}",
                 "get_only_by_mac": {},
                 "drop_votes": {}
             }}
-        "#, self.ipv4_addr, self.port, self.username, self.get_only_by_mac, self.drop_votes)
+        "#, ipv4_addr, self.port, self.username, self.get_only_by_mac, self.drop_votes)
     }
 
     pub fn to_json_string_without_drop_votes(&self) -> String {
+        let ipv4_addr = ipparser::u32_to_ipv4(self.ipv4_addr);
         format!(r#"
             {{
-                "ipv4_addr": {}, 
+                "ipv4_addr": "{}", 
                 "port": {},
                 "username": "{}",
                 "get_only_by_mac": {}
             }}
-        "#, self.ipv4_addr, self.port, self.username, self.get_only_by_mac)
+        "#, ipv4_addr, self.port, self.username, self.get_only_by_mac)
+    }
+
+    pub fn to_json_string_without_drop_votes_get_only_by_mac(&self) -> String {
+        let ipv4_addr = ipparser::u32_to_ipv4(self.ipv4_addr);
+        format!(r#"
+            {{
+                "ipv4_addr": "{}", 
+                "port": {},
+                "username": "{}"
+            }}
+        "#, ipv4_addr, self.port, self.username)        
     }
 
     pub fn to_json_string_with_mac_without_drop_votes(&self, mac: &ipparser::MacAddress) -> String {
+        let ipv4_addr = ipparser::u32_to_ipv4(self.ipv4_addr);
         format!(r#"
             {{
                 "mac": {},
-                "ipv4_addr": {}, 
+                "ipv4_addr": "{}", 
                 "port": {},
                 "username": "{}",
                 "get_only_by_mac": {}
             }}
-        "#, mac, self.ipv4_addr, self.port, self.username, self.get_only_by_mac)        
+        "#, mac, ipv4_addr, self.port, self.username, self.get_only_by_mac)        
     }
 
     pub fn to_json_string_with_mac(&self, mac: &ipparser::MacAddress) -> String {
+        let ipv4_addr = ipparser::u32_to_ipv4(self.ipv4_addr);
         format!(r#"
             {{
                 "mac": {},
-                "ipv4_addr": {}, 
+                "ipv4_addr": "{}",
                 "port": {},
                 "username": "{}",
                 "get_only_by_mac": {},
                 "drop_votes": {}
             }}
-        "#, mac, self.ipv4_addr, self.port, self.username, self.get_only_by_mac, self.drop_votes)        
+        "#, mac, ipv4_addr, self.port, self.username, self.get_only_by_mac, self.drop_votes)        
     }
 }
 

@@ -29,7 +29,7 @@ impl fmt::Display for ReplyErrCodes {
 pub fn reply_client_getbymac(mac: &ipparser::MacAddress, clients_map: &clients::ClientsMap, guilty: &net::SocketAddr) -> String {
     if let Some(client) = clients_map.get_by_mac(mac) {
         log::info!("{} was sent to {}", mac, guilty);
-        format!("{{\"client\":{}}}", client.to_json_string_without_drop_votes())
+        format!("{{\"client\":{}}}", client.to_json_string_without_drop_votes_get_only_by_mac())
     } else {
         log::info!("{} doesn't exist, but was requested by {}", mac, guilty);
         format!("{}", ReplyErrCodes::ClientDoesNotExist)
@@ -43,7 +43,7 @@ pub fn reply_client_getbyusername(username: &str, clients_map: &clients::Clients
             let clients_len = clients.len();
             let mut json_array = String::from("[");
             for client in clients {
-                json_array.push_str(client.to_json_string_without_drop_votes().as_str());
+                json_array.push_str(client.to_json_string_without_drop_votes_get_only_by_mac().as_str());
                 json_array.push(',');
             }
             json_array.push_str("]");

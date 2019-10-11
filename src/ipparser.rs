@@ -27,7 +27,7 @@ impl MacAddress {
 
 impl fmt::Display for MacAddress {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {        
-        write!(f, "{}", u64_to_mac(self.mac, ':').unwrap())
+        write!(f, "{}", u64_to_mac(self.mac, '.').unwrap())
     }    
 }
 
