@@ -1,0 +1,2 @@
+--enable-remote-admin
+remote-admin

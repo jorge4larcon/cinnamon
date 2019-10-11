@@ -1,6 +1,7 @@
 extern crate clap;
 
 use cinnamon::config;
+use cinnamon::server;
 use cinnamon::ipparser;
 use cinnamon::run_start_command;
 use std::process;
@@ -22,9 +23,9 @@ fn drop_votes_validator(dv: String) -> Result<(), String> {
 }
 
 fn password_validator(pass: String) -> Result<(), String> {
-    if pass.is_ascii() && pass.len() < 33 {
+    if server::Server::is_valid_key(pass) {
         return Ok(());
-    }
+    }    
     Err(format!("Password and key must contain only ascii characters and less than 33 characters"))
 }
 

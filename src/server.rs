@@ -36,6 +36,10 @@ impl Server {
         }
     }
 
+    pub fn is_valid_key(key: &str) -> bool {
+        key.is_ascii() && key.len() < 33
+    }
+
     pub fn run(&mut self) {
         if let Ok(listener) = net::TcpListener::bind(self.address) {
             log::info!("I'm listening on {}", self.address);
