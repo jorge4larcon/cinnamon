@@ -41,10 +41,27 @@ impl fmt::Display for Client {
         } else {
             write!(f, "{} {} PORT: {} DROP-VOTES: {}", self.username, ipparser::u32_to_ipv4(self.ipv4_addr), self.port, self.drop_votes)
         }
-    }  
+    }
+}
+
+impl fmt::Debug for Client {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.get_only_by_mac {
+            write!(f, "{} {} MAC-ONLY PORT: {} DROP-VOTES: {}", self.username, ipparser::u32_to_ipv4(self.ipv4_addr), self.port, self.drop_votes)
+        } else {
+            write!(f, "{} {} PORT: {} DROP-VOTES: {}", self.username, ipparser::u32_to_ipv4(self.ipv4_addr), self.port, self.drop_votes)
+        }
+    }
 }
 
 impl Client {
+
+    pub fn new(ipv4_addr: u32, port: u16, username: &str, get_only_by_mac: bool, drop_votes: u8) -> Option<Client> {
+        if Client::is_valid_username(username) {
+            return Some(Client { ipv4_addr, port, username: String::from(username), get_only_by_mac, drop_votes });
+        }
+        None
+    }
 
     pub fn get_ipv4_addr(&self) -> u32 {
         self.ipv4_addr
@@ -321,13 +338,13 @@ impl ClientsMap {
         for (index, client) in self.clients.values().enumerate() {
             if index >= start_index {
                 if clients.len() == size {
-                    return (clients, index);
+                    return (clients, index-1);
                 } else if client.username_contains_ignore_case(pattern) {
                     clients.push(client.clone());
                 }                
             }
         }
-        (clients, self.clients.len() - 1)
+        (clients, self.clients.len()-1)
     }
 
     pub fn usernames_that_contain_get_by_mac_only(&self, start_index: usize, size: usize, pattern: &str) -> (Vec<Client>, usize) {

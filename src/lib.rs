@@ -6,6 +6,9 @@ pub mod clients;
 pub mod requests;
 pub mod replies;
 pub mod server;
+#[cfg(test)]
+mod tests;
+
 
 pub fn run_start_command(start_config: config::StartConfig) {
     log::info!("{}", start_config);
