@@ -14,7 +14,8 @@ pub struct StartConfig {
     pub key: String,
     pub capacity: u16,
     pub list_size: u16,
-    pub drop_verification: bool
+    pub drop_verification: bool,
+    pub log_level: log::LevelFilter
 }
 
 impl fmt::Display for StartConfig {
@@ -74,13 +75,24 @@ impl StartConfig {
 
             let drop_verification = matches.is_present("drop-verification");
 
-            return Some( StartConfig { address, drop_votes, password, key, capacity, list_size, drop_verification } );
+            let log_level: log::LevelFilter;
+            if let Some(ll) = matches.value_of("log-level") {
+                match ll {
+                    "error" => log_level = log::LevelFilter::Error,
+                    "warning" => log_level = log::LevelFilter::Warn,
+                    "info" => log_level = log::LevelFilter::Info,
+                    "debug" => log_level = log::LevelFilter::Debug,
+                    _ => { return None; }
+                }
+            } else { return None; }
+
+            return Some( StartConfig { address, drop_votes, password, key, capacity, list_size, drop_verification, log_level } );
         }
         None
     }
 }
 
-pub fn setup_logging() -> Result<(), fern::InitError> {
+pub fn setup_logging(log_level: &log::LevelFilter) -> Result<(), fern::InitError> {
     let colors = fern::colors::ColoredLevelConfig::new().info(fern::colors::Color::Green)
                                                         .warn(fern::colors::Color::Yellow)
                                                         .error(fern::colors::Color::Red)
@@ -95,7 +107,7 @@ pub fn setup_logging() -> Result<(), fern::InitError> {
                 message
             ))
         })
-        .level(log::LevelFilter::Info)
+        .level(*log_level)
         .chain(std::io::stdout())        
         .apply()?;        
     Ok(())

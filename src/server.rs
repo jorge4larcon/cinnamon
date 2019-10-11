@@ -43,12 +43,12 @@ impl Server {
                 match stream {
                     Ok(mut stream) => {
                         if let Ok(peer_addr) = stream.peer_addr() {
-                            log::info!("New connection with {}", peer_addr);                            
+                            log::debug!("New connection from {}", peer_addr);
                             let mut buffer = [0; 1024];
                             if let Ok(bytes_read) = stream.read(&mut buffer) {
                                 let request_str = String::from_utf8_lossy(&buffer[..bytes_read]);
                                 if let Some(request) = requests::Request::from(&request_str) {
-                                    log::debug!("I could parse the request");
+                                    let request_type: &str;
                                     match request {
                                         requests::Request::Admin(a_request) => {
                                             match a_request {
@@ -69,60 +69,51 @@ impl Server {
                                                 }
                                             }
                                         },
-                                        requests::Request::Client(c_request) => {
-                                            log::debug!("Repliying a client request");
+                                        requests::Request::Client(c_request) => {                                            
                                             let mut reply: Option<String> = None;
-                                            let copy_c_request = c_request.clone();
-                                            log::debug!("I could clone the request");
                                             match c_request {
                                                 requests::ClientRequest::GetByMac { password: client_password, mac } => {
-                                                    log::debug!("It's a ClientRequest::GetByMac");
+                                                    request_type = "Client::GetByMac";
                                                     if self.password == client_password {
                                                         reply = Some(replies::reply_client_getbymac(&mac, &self.clients));
-                                                        log::debug!("I could obtain the reply");
                                                     } else { log::info!("The client {} doesn't know the password", peer_addr); }
                                                 },
                                                 requests::ClientRequest::GetByUsername { password: client_password, username, start_index } => {
-                                                    log::debug!("It's a ClientRequest::GetByUsername");
+                                                    request_type = "Client::GetByUsername";
                                                     if self.password == client_password {
                                                         reply = Some(replies::reply_client_getbyusername(&username, &self.clients, self.list_size, start_index));
-                                                        log::debug!("I could obtain the reply");
                                                     } else { log::info!("The client {} doesn't know the password", peer_addr); }
                                                 },
                                                 requests::ClientRequest::Drop { password: client_password, ip } => {
-                                                    log::debug!("It's a ClientRequest::Drop");
+                                                    request_type = "Client::Drop";
                                                     if self.password == client_password {
                                                         reply = Some(replies::reply_client_drop(&ip, &mut self.clients, self.drop_votes));
-                                                        log::debug!("I could obtain the reply");
                                                     } else { log::info!("The client {} doesn't know the password", peer_addr); }
-                                                    log::info!("Clients database:\n{}", self.clients);
+                                                    log::debug!("Client's DB:\n{}", self.clients);
                                                 },
                                                 requests::ClientRequest::SignUp { password: client_password, username, mac, port, get_only_by_mac } => {
-                                                    log::debug!("It's a ClientRequest::SignUp");
+                                                    request_type = "Client::SignUp";
                                                     if self.password == client_password {
-                                                        log::debug!("The passwords match");
                                                         match peer_addr {
                                                             net::SocketAddr::V4(sock_addr) => {
-                                                                log::debug!("I'll try to get the reply...");
                                                                 reply = Some(replies::reply_client_signup(&mut self.clients, &username, &mac, &sock_addr.ip(), port, get_only_by_mac, self.capacity));
-                                                                log::debug!("I could obtain the reply");
                                                             },
-                                                            _ => log::info!("I only support IPv4, client {} doesn't know that", peer_addr)                                                            
+                                                            _ => log::info!("I only support IPv4, client {} doesn't know that", peer_addr)
                                                         }
                                                     } else { log::info!("The client {} doesn't know the password", peer_addr); }
-                                                    log::info!("Clients database:\n{}", self.clients);
+                                                    log::debug!("Client's DB:\n{}", self.clients);
                                                 }
                                             }
 
                                             if let Some(reply) = reply {
                                                 if let Ok(bytes_written) = stream.write(reply.as_bytes()) {
                                                     if bytes_written == reply.as_bytes().len() {
-                                                        log::info!("{} from {} Ok!", copy_c_request, peer_addr);
+                                                        log::info!("{} from {} Ok!", request_type, peer_addr);
                                                     } else {
-                                                        log::warn!("{} from {} Err! I couldn' write the entire reply", copy_c_request, peer_addr);
+                                                        log::warn!("{} from {} Err! I couldn' write the entire reply", request_type, peer_addr);
                                                     }
                                                 } else {
-                                                    log::warn!("{} from {} Err! I couldn' write anything", copy_c_request, peer_addr);
+                                                    log::warn!("{} from {} Err! I couldn' write anything", request_type, peer_addr);
                                                 }                                                
                                             } else {
                                                 let message = b"Only IPv4 is supported";

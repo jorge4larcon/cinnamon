@@ -66,22 +66,20 @@ pub fn reply_client_drop(ip: &net::Ipv4Addr, clients_map: &mut clients::ClientsM
 }
 
 pub fn reply_client_signup(clients_map: &mut clients::ClientsMap, username: &str, mac: &ipparser::MacAddress, ip: &net::Ipv4Addr, port: u16, get_only_by_mac: bool, capaciy: u16) -> String {
-    let client = clients::Client { ipv4_addr: ipparser::ipv4addr_to_u32(ip), port, username: String::from(username), get_only_by_mac, drop_votes: 0 };
-    log::debug!("I made the user");
-    if let Ok(capaciy) = usize::try_from(capaciy) {
-        log::debug!("I could parse an u16 to an usize");
+    let client = clients::Client { ipv4_addr: ipparser::ipv4addr_to_u32(ip), port, username: String::from(username), get_only_by_mac, drop_votes: 0 };    
+    if let Ok(capaciy) = usize::try_from(capaciy) {        
         if clients_map.len() < capaciy {
             match clients_map.insert(mac, &client) {
                 clients::InsertionType::Insert => {
-                    log::info!("New client {}", client);
+                    log::info!("We have a new client:\n{} = {}", mac, client);
                     return format!("{{\"result\": \"You have been registered\"}}");
                 },
                 clients::InsertionType::Update => {
-                    log::info!("Updated client {}", client);
+                    log::info!("The client {} has been updated", mac);
                     return format!("{{\"result\": \"Your data has been updated\"}}");
                 },
-                clients::InsertionType::Replace => {
-                    log::info!("Replacing client {}", client);
+                clients::InsertionType::Replace { client_mac_replaced } => {
+                    log::info!("The client {} was replaced by {} {}", client_mac_replaced, mac, ip);
                     return format!("{{\"result\": \"You have been registered\"}}");
                 }
             }

@@ -61,7 +61,7 @@ impl fmt::Display for AddrContainer {
             write!(f, "{}%{}:{}", self.address, self.iface, self.port)
         } else {
             write!(f, "{}:{}", self.address, self.port)
-        }        
+        }
     }
 }
 

@@ -19,20 +19,20 @@ impl Request {
             let user;
             if let Some(pass) = request.get("password") {
                 if let Some(pass) = pass.as_str() {
-                    log::debug!("Request::from - password obtained");
                     password = String::from(pass);
+                    log::debug!("Request::from - password obtained ({})", password);
                     if let Some(usr) = request.get("user") {
                         if let Some(usr) = usr.as_str() {
                             match usr.to_lowercase().as_str() {
                                 "admin" | "client" => user = String::from(usr.to_lowercase()),
                                 _ => return None
                             }
-                            log::debug!("Request::from - user obtained");
+                            log::debug!("Request::from - user obtained ({})", user);
                             if let Some(method) = request.get("method") {
                                 if let Some(method) = method.as_str() {
                                     match method {
                                         "get" => {
-                                            log::debug!("Request::from - method get obtained");
+                                            log::debug!("Request::from - method obtained (get)");
                                             if user == "admin" { // AdminGet
                                                 log::debug!("Request::from - parsed request: AdminRequest::Get");
                                                 return Some(Request::Admin(AdminRequest::Get));
@@ -77,7 +77,7 @@ impl Request {
                                             }
                                         },
                                         "drop" => {
-                                            log::debug!("Request::from - method drop obtained");
+                                            log::debug!("Request::from - method obtained (drop)");
                                             if user == "admin" { // AdminDrop
                                                 log::debug!("Request::from - parsed request: AdminRequest::Drop");
                                                 return Some(Request::Admin(AdminRequest::Drop));
@@ -94,13 +94,13 @@ impl Request {
                                             }
                                         },
                                         "set" => { // Admin only
-                                            log::debug!("Request::from - method set obtained");
+                                            log::debug!("Request::from - method obtained (set)");
                                             if user != "admin" { return None; }
                                             log::debug!("Request::from - parsed request: AdminRequest::Set");
                                             return Some(Request::Admin(AdminRequest::Set));
                                         }, 
                                         "sign_up" => { // Client only
-                                        log::debug!("Request::from - method sign_up obtained");
+                                        log::debug!("Request::from - method obtained (sign_up)");
                                             if user != "client" { return None; }
                                             if let Some(username) = request.get("username") {
                                                 if let Some(username) = username.as_str() {                                                    
@@ -130,7 +130,10 @@ impl Request {
                                                 }
                                             }
                                         },
-                                        _ => return None
+                                        _ => {
+                                            log::debug!("Request::from - method not obtained");
+                                            return None;
+                                        }
                                     }
                                 }
                             }

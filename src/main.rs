@@ -123,10 +123,20 @@ fn main() {
                                             .long("drop-verification")
                                             .long_help("When enabled, the server tries to connect to the client that is going to be dropped, if the connection fails the client is dropped, else restarts its drop votes to zero")
                                             .multiple(false)
-                                            .required(false))                                        
+                                            .required(false))
+                                        .arg(Arg::with_name("log-level")
+                                            .short("L")
+                                            .long("log-level")
+                                            .value_name("LOG LEVEL")
+                                            .help("Sets the logging level")
+                                            .possible_values(&["error", "warning", "info", "debug"])
+                                            .default_value("info")
+                                            .takes_value(true)
+                                            .number_of_values(1)
+                                            .required(false))
                                         .arg(Arg::with_name("list-size")
                                             .short("l")
-                                            .long("list-limit")
+                                            .long("list-size")
                                             .value_name("GET'S LIST SIZE")
                                             .help("Sets how many users the server will send to a GET request")
                                             .default_value("5")
@@ -155,7 +165,7 @@ fn main() {
         }
     }
 
-    if let Err(_) = config::setup_logging() {
+    if let Err(_) = config::setup_logging(&start_command_config.log_level) {
         eprintln!("Failed to set up logging, maybe there's one logger already...")
     }
 

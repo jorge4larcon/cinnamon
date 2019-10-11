@@ -232,8 +232,8 @@ impl fmt::Display for ClientsMap {
             write!(f, "This ClientsMap is empty")
         } else {
             let mut clients_map = String::default();
-            for (mac, client) in self.clients.iter() {
-                clients_map.push_str(&format!("{} => {}\n", mac, client));
+            for (i, (mac, client)) in self.clients.iter().enumerate() {
+                clients_map.push_str(&format!("[{}] {} {}\n", i+1, mac, client));
             }
             if self.clients.len() > 1 {
                 clients_map.push_str(&format!("{} clients", self.clients.len()));
@@ -247,8 +247,8 @@ impl fmt::Display for ClientsMap {
 
 pub enum InsertionType {
     Update,
-    Replace,
-    Insert    
+    Replace { client_mac_replaced: ipparser::MacAddress},
+    Insert
 }
 
 impl ClientsMap {
@@ -279,7 +279,7 @@ impl ClientsMap {
             }            
             self.clients.remove(&repl_mac);
             self.clients.insert(mac.clone(), client.clone());
-            return InsertionType::Replace;        
+            return InsertionType::Replace { client_mac_replaced: repl_mac };
         }
     }
 
