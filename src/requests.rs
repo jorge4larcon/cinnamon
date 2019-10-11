@@ -153,7 +153,9 @@ impl Request {
                     } else { log::debug!("Request::from - user not obtained"); }
                 } else { log::debug!("Request::from - password not obtained"); }
             } else { log::debug!("Request::from - password not obtained"); }
-        } else { log::debug!("Request::from - failed to serde_json::from_str"); }        
+        } else { 
+            log::debug!("Request::from - failed to serde_json::from_str, request:\n{}", request_str);            
+        }
         None
     }
 }

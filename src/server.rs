@@ -130,7 +130,7 @@ impl Server {
                                         }
                                     }
                                 } else {
-                                    log::info!("I didn't unserstand the request of {}", peer_addr);
+                                    log::info!("I didn't understand the request of {}", peer_addr);
                                     let message = b"I don't understand you";
                                     if let Ok(bytes_written) = stream.write(message) {
                                         if bytes_written == message.len() {
