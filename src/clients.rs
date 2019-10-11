@@ -333,6 +333,22 @@ impl ClientsMap {
         false
     }
 
+    pub fn range(&self, start_index: usize, end_index: usize) -> Vec<(ipparser::MacAddress, Client)> {
+        let mut clients_range: Vec<(ipparser::MacAddress, Client)> = Vec::new();
+        if start_index >= self.clients.len() || end_index > self.clients.len() || start_index == end_index || start_index > end_index {
+            return clients_range;
+        }
+
+        for (index, (mac, client)) in self.clients.iter().enumerate() {
+            if index >= start_index && index < end_index {
+                clients_range.push((mac.clone(), client.clone()));
+            } else if index >= end_index {
+                break;
+            }
+        }
+        return clients_range;
+    }
+
     pub fn usernames_that_contain(&self, start_index: usize, size: usize, pattern: &str) -> (Vec<Client>, usize) {
         let mut clients: Vec<Client> = Vec::new();
         for (index, client) in self.clients.values().enumerate() {
