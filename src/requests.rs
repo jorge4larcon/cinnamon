@@ -179,7 +179,7 @@ impl Request {
                                                         "key" => {
                                                             if let Some(key) = request.get("key") {
                                                                 if let Some(key) = key.as_str(){
-                                                                    if server::Server::is_valid_key(key) {
+                                                                    if server::is_valid_key(key) {
                                                                         log::debug!("Request::from - parsing request: AdminRequest::Set key obtained ({})", key);
                                                                         log::debug!("Request::from - parsed request: AdminRequest::SetKey");
                                                                         return Some(Request::Admin(AdminRequest::SetKey { password, key: String::from(key) } ));
@@ -190,7 +190,7 @@ impl Request {
                                                         "password" => {
                                                             if let Some(new_password) = request.get("new_password") {
                                                                 if let Some(new_password) = new_password.as_str(){
-                                                                    if server::Server::is_valid_key(new_password) {
+                                                                    if server::is_valid_key(new_password) {
                                                                         log::debug!("Request::from - parsing request: AdminRequest::Set new_password obtained ({})", new_password);
                                                                         log::debug!("Request::from - parsed request: AdminRequest::SetPassword");
                                                                         return Some(Request::Admin(AdminRequest::SetPassword { password, new_password: String::from(new_password) } ));
@@ -209,8 +209,26 @@ impl Request {
                                                                 } else { log::debug!("Request::from - parsing request: AdminRequest::Set capacity not obtained"); }
                                                             } else { log::debug!("Request::from - parsing request: AdminRequest::Set capacity not obtained"); }
                                                         },
-                                                        "list_size" => {},
-                                                        "drop_verification" => {},
+                                                        "list_size" => {
+                                                            if let Some(list_size) = request.get("list_size") {
+                                                                if let Some(list_size) = list_size.as_u64(){
+                                                                    if let Ok(list_size) = u16::try_from(list_size) {
+                                                                        log::debug!("Request::from - parsing request: AdminRequest::Set list_size obtained ({})", list_size);
+                                                                        log::debug!("Request::from - parsed request: AdminRequest::SetListSize");
+                                                                        return Some(Request::Admin(AdminRequest::SetListSize { password, list_size } ));
+                                                                    } else { log::debug!("Request::from - parsing request: AdminRequest::Set incorrect list_size ({})", list_size); }
+                                                                } else { log::debug!("Request::from - parsing request: AdminRequest::Set list_size not obtained"); }
+                                                            } else { log::debug!("Request::from - parsing request: AdminRequest::Set list_size not obtained"); }
+                                                        },
+                                                        "drop_verification" => {
+                                                            if let Some(drop_verification) = request.get("drop_verification") {
+                                                                if let Some(drop_verification) = drop_verification.as_bool(){                                                                    
+                                                                    log::debug!("Request::from - parsing request: AdminRequest::Set drop_verification obtained ({})", drop_verification);
+                                                                    log::debug!("Request::from - parsed request: AdminRequest::SetDropVerification");
+                                                                    return Some(Request::Admin(AdminRequest::SetDropVerification { password, drop_verification } ));
+                                                                } else { log::debug!("Request::from - parsing request: AdminRequest::Set drop_verification not obtained"); }
+                                                            } else { log::debug!("Request::from - parsing request: AdminRequest::Set drop_verification not obtained"); }
+                                                        },
                                                         _ => {
                                                             log::debug!("Request::from - parsing request: AdminRequest::Set incorrect what type ({})", what);
                                                             return None;
@@ -275,27 +293,51 @@ impl fmt::Display for Request {
         match self {
             Request::Admin(admin_request) => {
                 match admin_request {
-                    AdminRequest::Get => write!(f, "ADMIN Get"),
-                    AdminRequest::Drop => write!(f, "ADMIN Drop"),
-                    AdminRequest::Set => write!(f, "ADMIN Set")
+                    AdminRequest::GetByIndex { password: _password, start_index, end_index } => {
+                        write!(f, "AdminRequest::GetByIndex [{}, {})", start_index, end_index)
+                    },
+                    AdminRequest::GetByMac { password: _password, mac } => {
+                        write!(f, "AdminRequest::GetByMac {}", mac)
+                    },
+                    AdminRequest::GetByUsername { password: _password, username, start_index } => {
+                        write!(f, "AdminRequest::GetByUsername \"{}\" starting from {}", username, start_index)
+                    },
+                    AdminRequest::Drop { password: _password, ip } => {
+                        write!(f, "AdminRequest::Drop {}", ip)
+                    },
+                    AdminRequest::SetKey { password: _password, key } => {
+                        write!(f, "AdminRequest::SetKey {}", key)
+                    },
+                    AdminRequest::SetPassword { password: _password, new_password } => {
+                        write!(f, "AdminRequest::SetPassword {}", new_password)
+                    },
+                    AdminRequest::SetCapacity { password: _password, capacity } => {
+                        write!(f, "AdminRequest::SetCapacity {}", capacity)
+                    },
+                    AdminRequest::SetListSize { password: _password, list_size } => {
+                        write!(f, "AdminRequest::SetListSize {}", list_size)
+                    },
+                    AdminRequest::SetDropVerification { password: _password, drop_verification } => {
+                        write!(f, "AdminRequest::SetDropVerification {}", drop_verification)
+                    }
                 }
             },
             Request::Client(client_request) => {
                 match client_request {                    
                     ClientRequest::GetByMac { password: _password, mac } => {
-                        write!(f, "CLIENT GET {}", mac)
+                        write!(f, "ClientRequest::GetByMac {}", mac)
                     },
                     ClientRequest::GetByUsername { password: _password, username, start_index } => {
-                        write!(f, "CLIENT GET \"{}\" starting from {}", username, start_index)
+                        write!(f, "ClientRequest::GetByUsername \"{}\" starting from {}", username, start_index)
                     },
                     ClientRequest::Drop { password: _password, ip } => {
-                        write!(f, "CLIENT DROP {}", ip)
+                        write!(f, "ClientRequest::Drop {}", ip)
                     },
                     ClientRequest::SignUp { password: _password, username, mac, port, get_only_by_mac } => {
                         if *get_only_by_mac {
-                            write!(f, "CLIENT SIGN-UP \"{}\" {} PORT: {} MAC-ONLY", username, mac, port)
+                            write!(f, "ClientRequest::SignUp {} \"{}\" PORT: {} MAC-ONLY", mac, username, port)
                         } else {
-                            write!(f, "CLIENT SIGN-UP \"{}\" {} PORT: {}", username, mac, port)
+                            write!(f, "ClientRequest::SignUp {} \"{}\" PORT: {}", mac, username, port)
                         }
                     }
                 }
@@ -355,7 +397,7 @@ impl fmt::Display for AdminRequest {
             AdminRequest::GetByMac { password: _password, mac } => {
                 write!(f, "AdminRequest::GetByMac {}", mac)
             },
-            AdminRequest::GetByUsername { password: _password, username, start_index } {
+            AdminRequest::GetByUsername { password: _password, username, start_index } => {
                 write!(f, "AdminRequest::GetByUsername \"{}\" starting from {}", username, start_index)
             },
             AdminRequest::Drop { password: _password, ip } => {
@@ -422,7 +464,7 @@ impl fmt::Display for ClientRequest {
                 } else {
                     write!(f, "ClientRequest::SignUp {} \"{}\" PORT: {}", mac, username, port)
                 }
-            }                        
+            }
         }
     }
 }
