@@ -400,6 +400,20 @@ impl ClientsMap {
         return self.drop_vote_by_mac(&mac, drop_votes, max_drop_votes);
     }
 
+    pub fn drop_by_ipv4(&mut self, ipv4: u32) -> bool {
+        let mac;
+        if let Some((mac_k, _client)) = self.clients.iter().find(|(_mac, client)| client.get_ipv4_addr() == ipv4) {
+            mac = mac_k.clone();
+        } else { return false; }
+        
+        if let Some(_client) = self.clients.remove(&mac) {
+            return true;
+        } else {
+            log::error!("clients::ClientsMap::drop_by_ipv4: client {} was not removed", mac);
+            return false;
+        }
+    }
+
     pub fn drop_amount(&mut self, max_drop_votes: u8) -> Vec<(ipparser::MacAddress, Client)> {
         let mut clients: Vec<(ipparser::MacAddress, Client)> = Vec::new();
         for (mac, client) in self.clients.iter() {
@@ -410,10 +424,9 @@ impl ClientsMap {
         for (mac, _client) in clients.iter() {
             if let Some(_c) = self.clients.remove(&mac) {
             } else {
-                log::error!("clients::ClientsMap::drop_amount: a client was not removed");
+                log::error!("clients::ClientsMap::drop_amount: client {} was not removed", mac);
             }
         }
         clients
     }
-
 }

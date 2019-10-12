@@ -48,51 +48,115 @@ impl Server {
                             if let Ok(bytes_read) = stream.read(&mut buffer) {
                                 let request_str = String::from_utf8_lossy(&buffer[..bytes_read]);
                                 if let Some(request) = requests::Request::from(&request_str) {
-                                    let request_type: &str;
+                                    let request_type = format!("{}", request);
                                     match request {
                                         requests::Request::Admin(a_request) => {
-                                            match a_request {
-                                                // requests::AdminRequest::Get => {},
-                                                // requests::AdminRequest::Set => {},
-                                                // requests::AdminRequest::Drop => {},
-                                                _ => {
-                                                    let message = b"Only clients are supported";
-                                                    if let Ok(bytes_written) = stream.write(message) {
-                                                        if bytes_written == message.len() {
-                                                            log::info!("Failure message sent to {}", peer_addr);
-                                                        } else {
-                                                            log::warn!("I could not write the entire failure message to client {}", peer_addr);
+                                            let mut reply: Option<String> = None;
+                                            match peer_addr {
+                                                net::SocketAddr::V4(admin_addr) => {
+                                                    if self.address.ip() == admin_addr.ip() {                                                        
+                                                        match a_request {
+                                                            requests::AdminRequest::Drop { password, ip } => {
+                                                                if self.key == password {
+                                                                    reply = Some(replies::reply_admin_drop(&ip, &mut self.clients, &peer_addr))
+                                                                } else { log::info!("The admin forgot the password"); }
+                                                            },
+                                                            requests::AdminRequest::GetByIndex { password, start_index, end_index } => {
+                                                                if self.key == password {
+                                                                    reply = Some(replies::reply_admin_getbyindex(start_index, end_index, &self.clients , &peer_addr));
+                                                                } else { log::info!("The admin forgot the password"); }
+                                                            },
+                                                            requests::AdminRequest::GetByMac { password, mac } => {
+                                                                if self.key == password {
+                                                                    reply = Some(replies::reply_admin_getbymac(&mac, &self.clients, &peer_addr));
+                                                                } else { log::info!("The admin forgot the password"); }
+                                                            },
+                                                            requests::AdminRequest::GetByUsername { password, username, start_index } => {
+                                                                if self.key == password {
+                                                                    reply = Some(replies::reply_admin_getbyusername(&username, &self.clients, self.list_size, start_index, &peer_addr));
+                                                                } else { log::info!("The admin forgot the password"); }
+                                                            },
+                                                            requests::AdminRequest::SetCapacity { password, capacity } => {
+                                                                if self.key == password {
+                                                                    reply = Some(replies::reply_admin_setcapacity(capacity, &mut self.capacity, self.clients.len()));
+                                                                } else { log::info!("The admin forgot the password"); }
+                                                            },
+                                                            requests::AdminRequest::SetDropVerification { password, drop_verification } => {
+                                                                if self.key == password {
+                                                                    reply = Some(replies::reply_admin_setdropverification(drop_verification, &mut self.drop_verification));
+                                                                } else { log::info!("The admin forgot the password"); }
+                                                            },
+                                                            requests::AdminRequest::SetDropVotes { password, drop_votes } => {
+                                                                if self.key == password {
+                                                                    reply = Some(replies::reply_admin_setdropvotes(drop_votes, &mut self.drop_votes, &mut self.clients));
+                                                                } else { log::info!("The admin forgot the password"); }
+                                                            },
+                                                            requests::AdminRequest::SetKey { password, key } => {
+                                                                if self.key == password {
+                                                                    reply = Some(replies::reply_admin_setkey(&key, &mut self.key));
+                                                                } else { log::info!("The admin forgot the password"); }
+                                                            },
+                                                            requests::AdminRequest::SetListSize { password, list_size } => {
+                                                                if self.key == password {
+                                                                    reply = Some(replies::reply_admin_setlistsize(list_size, &mut self.list_size));
+                                                                } else { log::info!("The admin forgot the password"); }
+                                                            },
+                                                            requests::AdminRequest::SetPassword { password, new_password } => {
+                                                                if self.key == password {
+                                                                    reply = Some(replies::reply_admin_setpassword(&new_password, &mut self.password));
+                                                                } else { log::info!("The admin forgot the password"); }
+                                                            }                                               
                                                         }
+                                                    } else { log::warn!("A remote host tried to admin the sever ({})", admin_addr); }
+                                                },
+                                                net::SocketAddr::V6(admin_addr) => {
+                                                    log::info!("I only support IPv4, admin {} doesn't know that", admin_addr)
+                                                }
+                                            }
+                                                                            
+                                            if let Some(reply) = reply {
+                                                if let Ok(bytes_written) = stream.write(reply.as_bytes()) {
+                                                    if bytes_written == reply.as_bytes().len() {
+                                                        log::info!("{} Ok!", request_type);
                                                     } else {
-                                                        log::warn!("I couln't write to client {}", peer_addr);
+                                                        log::warn!("{} Err! I couldn' write the entire reply", request_type);
                                                     }
+                                                } else {
+                                                    log::warn!("{} Err! I couldn' write anything", request_type);
+                                                }                                                
+                                            } else {
+                                                let message = b"Only IPv4 is supported";
+                                                if let Ok(bytes_written) = stream.write(message) {
+                                                    if bytes_written == message.len() {
+                                                        log::info!("Failure message sent to {}", peer_addr);
+                                                    } else {
+                                                        log::warn!("I could not write the entire failure message to admin {}", peer_addr);
+                                                    }
+                                                } else {
+                                                    log::warn!("I couln't write to admin {}", peer_addr);
                                                 }
                                             }
                                         },
-                                        requests::Request::Client(c_request) => {                                            
-                                            let mut reply: Option<String> = None;
+                                        requests::Request::Client(c_request) => {    
+                                            let mut reply: Option<String> = None;                                            
                                             match c_request {
                                                 requests::ClientRequest::GetByMac { password: client_password, mac } => {
-                                                    request_type = "Client::GetByMac";
                                                     if self.password == client_password {
                                                         reply = Some(replies::reply_client_getbymac(&mac, &self.clients, &peer_addr));
                                                     } else { log::info!("The client {} doesn't know the password", peer_addr); }
                                                 },
                                                 requests::ClientRequest::GetByUsername { password: client_password, username, start_index } => {
-                                                    request_type = "Client::GetByUsername";
                                                     if self.password == client_password {
                                                         reply = Some(replies::reply_client_getbyusername(&username, &self.clients, self.list_size, start_index, &peer_addr));
                                                     } else { log::info!("The client {} doesn't know the password", peer_addr); }
                                                 },
                                                 requests::ClientRequest::Drop { password: client_password, ip } => {
-                                                    request_type = "Client::Drop";
                                                     if self.password == client_password {
                                                         reply = Some(replies::reply_client_drop(&ip, &mut self.clients, self.drop_votes, &peer_addr));
                                                     } else { log::info!("The client {} doesn't know the password", peer_addr); }
                                                     log::debug!("Client's DB:\n{}", self.clients);
                                                 },
                                                 requests::ClientRequest::SignUp { password: client_password, username, mac, port, get_only_by_mac } => {
-                                                    request_type = "Client::SignUp";
                                                     if self.password == client_password {
                                                         match peer_addr {
                                                             net::SocketAddr::V4(sock_addr) => {

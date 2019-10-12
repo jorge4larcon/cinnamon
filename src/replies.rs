@@ -26,21 +26,21 @@ impl fmt::Display for ReplyErrCodes {
     }
 }
 
-// pub fn reply_client_drop(ip: &net::Ipv4Addr, clients_map: &mut clients::ClientsMap, max_drop_votes: u8, guilty: &net::SocketAddr) -> String {
-//     let ipv4 = ipparser::ipv4addr_to_u32(ip);
-//     if clients_map.exists_by_ipv4(ipv4) {
-//         if clients_map.drop_vote_by_ipv4(ipv4, 1, max_drop_votes) {
-//             log::info!("The client {} was dropped out by {}", ip, guilty);
-//             return format!("{{\"result\":\"Client was dropped out\"}}");
-//         } else {            
-//             log::info!("The client {} tried to drop out {}", guilty, ip);
-//             return format!("{{\"result\":\"Client was not dropped out\"}}");
-//         }
-//     } else {
-//         log::info!("The client {} doesn't exist but {} tried to drop it", ip, guilty);
-//         return format!("{}", ReplyErrCodes::ClientDoesNotExist);
-//     }
-// }
+pub fn reply_admin_drop(ip: &net::Ipv4Addr, clients_map: &mut clients::ClientsMap, _guilty: &net::SocketAddr) -> String {
+    let ipv4 = ipparser::ipv4addr_to_u32(ip);
+    if clients_map.exists_by_ipv4(ipv4) {
+        if clients_map.drop_by_ipv4(ipv4) {
+            log::info!("The admin dropped out the client {}", ip);
+            return format!("{{\"result\":\"Client was dropped out\"}}");
+        } else {            
+            log::error!("The admin wanted to drop the client {}, the client exists but was not dropped out", ip);
+            return format!("{{\"result\":\"Client was not dropped out\"}}");
+        }
+    } else {
+        log::info!("The client {} doesn't exist but the admin tried to drop it", ip);
+        return format!("{}", ReplyErrCodes::ClientDoesNotExist);
+    }
+}
 
 pub fn reply_admin_setdropvotes(new_dv: u8, server_dv: &mut u8, clients_map: &mut clients::ClientsMap) -> String {
     *server_dv = new_dv;
@@ -74,8 +74,14 @@ pub fn reply_admin_setdropverification(new_dv: bool, server_dv: &mut bool) -> St
 
 pub fn reply_admin_setlistsize(new_list_size: u16, server_list_size: &mut u16) -> String {
     *server_list_size = new_list_size;
-    log::info!("The admin set the list size to {}", server_list_size);
-    format!("{{\"result\":\"The list size has been changed to {}\"}}", server_list_size)
+
+    if *server_list_size == 0 {
+        log::warn!("The admin set the list size to {}, no clients will be sended when ClientRequest::GetByUsername", server_list_size);
+        format!("{{\"result\":\"The list size has been changed to {}, no clients will be sended when ClientRequest::GetByUsername\"}}", server_list_size)
+    } else {
+        log::info!("The admin set the list size to {}", server_list_size);
+        format!("{{\"result\":\"The list size has been changed to {}\"}}", server_list_size)
+    }
 }
 
 pub fn reply_admin_setcapacity(new_capacity: u16, server_capacity: &mut u16, clients_map_len: usize) -> String {
