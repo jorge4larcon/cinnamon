@@ -384,6 +384,7 @@ impl ClientsMap {
         if let Some(client) = self.clients.get_mut(mac) {
             actual_drop_votes = client.add_drop_votes(drop_votes);
         } else { return false; }
+        
         if actual_drop_votes >= max_drop_votes {
             self.clients.remove(mac);
             return true;
@@ -397,6 +398,22 @@ impl ClientsMap {
             mac = mac_key.clone();
         } else {  return false; }
         return self.drop_vote_by_mac(&mac, drop_votes, max_drop_votes);
+    }
+
+    pub fn drop_amount(&mut self, max_drop_votes: u8) -> Vec<(ipparser::MacAddress, Client)> {
+        let mut clients: Vec<(ipparser::MacAddress, Client)> = Vec::new();
+        for (mac, client) in self.clients.iter() {
+            if client.drop_votes >= max_drop_votes {
+                clients.push((mac.clone(), client.clone()));       
+            }
+        }
+        for (mac, _client) in clients.iter() {
+            if let Some(_c) = self.clients.remove(&mac) {
+            } else {
+                log::error!("clients::ClientsMap::drop_amount: a client was not removed");
+            }
+        }
+        clients
     }
 
 }

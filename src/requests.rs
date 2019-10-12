@@ -229,6 +229,17 @@ impl Request {
                                                                 } else { log::debug!("Request::from - parsing request: AdminRequest::Set drop_verification not obtained"); }
                                                             } else { log::debug!("Request::from - parsing request: AdminRequest::Set drop_verification not obtained"); }
                                                         },
+                                                        "drop_votes" => {
+                                                            if let Some(drop_votes) = request.get("drop_votes") {
+                                                                if let Some(drop_votes) = drop_votes.as_u64(){
+                                                                    if let Ok(drop_votes) = u8::try_from(drop_votes) {
+                                                                        log::debug!("Request::from - parsing request: AdminRequest::Set drop_votes obtained ({})", drop_votes);
+                                                                        log::debug!("Request::from - parsed request: AdminRequest::SetDropVotes");
+                                                                        return Some(Request::Admin(AdminRequest::SetDropVotes { password, drop_votes } ));
+                                                                    } else { log::debug!("Request::from - parsing request: AdminRequest::Set incorrect drop_votes ({})", drop_votes); }
+                                                                } else { log::debug!("Request::from - parsing request: AdminRequest::Set drop_votes not obtained"); }
+                                                            } else { log::debug!("Request::from - parsing request: AdminRequest::Set drop_votes not obtained"); }
+                                                        }
                                                         _ => {
                                                             log::debug!("Request::from - parsing request: AdminRequest::Set incorrect what type ({})", what);
                                                             return None;
@@ -319,6 +330,9 @@ impl fmt::Display for Request {
                     },
                     AdminRequest::SetDropVerification { password: _password, drop_verification } => {
                         write!(f, "AdminRequest::SetDropVerification {}", drop_verification)
+                    },
+                    AdminRequest::SetDropVotes { password: _password, drop_votes } => {
+                        write!(f, "AdminRequest::SetDropVotes {}", drop_votes)
                     }
                 }
             },
@@ -385,6 +399,10 @@ pub enum AdminRequest {
     SetDropVerification {
         password: String,
         drop_verification: bool
+    },
+    SetDropVotes {
+        password: String,
+        drop_votes: u8
     }
 }
 
@@ -417,7 +435,10 @@ impl fmt::Display for AdminRequest {
             },
             AdminRequest::SetDropVerification { password: _password, drop_verification } => {
                 write!(f, "AdminRequest::SetDropVerification {}", drop_verification)
-            }
+            },
+            AdminRequest::SetDropVotes { password: _password, drop_votes } => {
+                write!(f, "AdminRequest::SetDropVotes {}", drop_votes)
+            }            
         }
     }
 }

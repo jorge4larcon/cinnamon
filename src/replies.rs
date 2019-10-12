@@ -21,9 +21,91 @@ impl fmt::Display for ReplyErrCodes {
             ReplyErrCodes::ClientDoesNotExist => write!(f, "{{\"err_code\":1,\"name\":\"ClientDoesNotExist\"}}"),
             ReplyErrCodes::UnsupportedListSize => write!(f, "{{\"err_code\":2,\"name\":\"UnsupportedListSize\"}}"),
             ReplyErrCodes::ServerCapacityIsFull => write!(f, "{{\"err_code\":3,\"name\":\"ServerCapacityIsFull\"}}"),
-            ReplyErrCodes::ServerInternalError => write!(f, "{{\"err_code\":4,\"name\":\"ServerInternalError\"}}")
+            ReplyErrCodes::ServerInternalError => write!(f, "{{\"err_code\":4,\"name\":\"ServerInternalError\"}}"),
         }
     }
+}
+
+// pub fn reply_client_drop(ip: &net::Ipv4Addr, clients_map: &mut clients::ClientsMap, max_drop_votes: u8, guilty: &net::SocketAddr) -> String {
+//     let ipv4 = ipparser::ipv4addr_to_u32(ip);
+//     if clients_map.exists_by_ipv4(ipv4) {
+//         if clients_map.drop_vote_by_ipv4(ipv4, 1, max_drop_votes) {
+//             log::info!("The client {} was dropped out by {}", ip, guilty);
+//             return format!("{{\"result\":\"Client was dropped out\"}}");
+//         } else {            
+//             log::info!("The client {} tried to drop out {}", guilty, ip);
+//             return format!("{{\"result\":\"Client was not dropped out\"}}");
+//         }
+//     } else {
+//         log::info!("The client {} doesn't exist but {} tried to drop it", ip, guilty);
+//         return format!("{}", ReplyErrCodes::ClientDoesNotExist);
+//     }
+// }
+
+pub fn reply_admin_setdropvotes(new_dv: u8, server_dv: &mut u8, clients_map: &mut clients::ClientsMap) -> String {
+    *server_dv = new_dv;
+    let dropped_clients = clients_map.drop_amount(*server_dv);
+    let mut list_of_dropped_clients = String::default();
+    for (index, (mac, client)) in dropped_clients.iter().enumerate() {
+        list_of_dropped_clients.push_str(&format!("[{}] {} {}\n", index, mac, client));
+    }
+    list_of_dropped_clients.push_str(&format!("{} client(s) were dropped out", list_of_dropped_clients.len()));
+
+    let mut clients_json_array = String::from("[");
+    for (mac, client) in dropped_clients {
+        clients_json_array.push_str(&client.to_json_string_with_mac(&mac));
+        clients_json_array.push(',');
+    }
+    clients_json_array.push(']');
+
+    log::warn!("The admin set the drop-votes to {}, any client with an equal or greater amount will be dropped out\n{}", server_dv, list_of_dropped_clients);
+    format!("{{\"result\":\"The drop-votes has been set to {}, any client with an equal or greater amount has been dropped out\",\"dropped_clients\":{}}}", server_dv, clients_json_array)
+}
+
+pub fn reply_admin_setdropverification(new_dv: bool, server_dv: &mut bool) -> String {
+    *server_dv = new_dv;
+    if *server_dv {
+        log::info!("The admin enabled the drop-verification");        
+    } else {
+        log::info!("The admin disabled the drop-verification");
+    }
+    format!("{{\"result\":\"The drop-verification has been set to {}\"}}", server_dv)
+}
+
+pub fn reply_admin_setlistsize(new_list_size: u16, server_list_size: &mut u16) -> String {
+    *server_list_size = new_list_size;
+    log::info!("The admin set the list size to {}", server_list_size);
+    format!("{{\"result\":\"The list size has been changed to {}\"}}", server_list_size)
+}
+
+pub fn reply_admin_setcapacity(new_capacity: u16, server_capacity: &mut u16, clients_map_len: usize) -> String {
+    *server_capacity = new_capacity;
+    if let Ok(clients_map_len) = u16::try_from(clients_map_len) {
+        if new_capacity < clients_map_len {
+            log::info!("The admin tried to set the capacity to {}, but there are {} clients signed up in the server, the request was rejected", new_capacity, clients_map_len);
+            format!("{{\"result\":\"There are {} clients signed up in the server, fist drop some and then set the capacity\"}}", clients_map_len)
+        } else {
+            log::info!("The admin set capacity to {}", server_capacity);
+            format!("{{\"result\":\"The capacity has been changed to {}\"}}", server_capacity)
+        }
+    } else {
+        log::error!("The admin tried to set the capacity, but there was an internal error casting an u16 to an usize and was rejected");
+        format!("{}", ReplyErrCodes::ServerInternalError)
+    }
+}
+
+pub fn reply_admin_setpassword(new_password: &str, server_password: &mut String) -> String {
+    server_password.clear();
+    server_password.push_str(new_password);
+    log::info!("The admin set the password to {}", server_password);
+    format!("{{\"result\":\"The password has been changed to {}\"}}", server_password)
+}
+
+pub fn reply_admin_setkey(new_key: &str, server_key: &mut String) -> String {
+    server_key.clear();
+    server_key.push_str(new_key);
+    log::info!("The admin set the key to {}", server_key);
+    format!("{{\"result\":\"The key has been changed to {}\"}}", server_key)
 }
 
 pub fn reply_admin_getbymac(mac: &ipparser::MacAddress, clients_map: &clients::ClientsMap, _guilty: &net::SocketAddr) -> String {
@@ -72,7 +154,7 @@ pub fn reply_admin_getbyindex(start_index: usize, end_index: usize, clients_map:
         log::info!("The admin requested a list of clients by the range [{}, {}) [{} client(s)]", start_index, end_index, list_len);
         return format!("{{\"clients\":{}}}", clients_json_array);
     } else {
-        log::info!("The admin requested a list of clients by the range [{}, {}), but there were not clients in that range", start_index, end_index);
+        log::info!("The admin requested a list of clients by the range [{}, {}), but there were no clients in that range", start_index, end_index);
         return format!("{{\"clients\":[]}}");
     }
 }
