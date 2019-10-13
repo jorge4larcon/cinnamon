@@ -230,7 +230,7 @@ impl Client {
         let ipv4_addr = ipparser::u32_to_ipv4(self.ipv4_addr);
         format!(r#"
             {{
-                "mac": {},
+                "mac": "{}",
                 "ipv4_addr": "{}", 
                 "port": {},
                 "username": "{}",
@@ -243,7 +243,7 @@ impl Client {
         let ipv4_addr = ipparser::u32_to_ipv4(self.ipv4_addr);
         format!(r#"
             {{
-                "mac": {},
+                "mac": "{}",
                 "ipv4_addr": "{}",
                 "port": {},
                 "username": "{}",
@@ -335,14 +335,19 @@ impl ClientsMap {
 
     pub fn range(&self, start_index: usize, end_index: usize) -> Vec<(ipparser::MacAddress, Client)> {
         let mut clients_range: Vec<(ipparser::MacAddress, Client)> = Vec::new();
-        if start_index >= self.clients.len() || end_index > self.clients.len() || start_index == end_index || start_index > end_index {
+        if start_index >= self.clients.len() /*|| end_index > self.clients.len() */|| start_index == end_index || start_index > end_index {
             return clients_range;
         }
 
+        let mut new_end_index = end_index;
+        if end_index > self.clients.len() {
+            new_end_index = self.clients.len();
+        }
+
         for (index, (mac, client)) in self.clients.iter().enumerate() {
-            if index >= start_index && index < end_index {
+            if index >= start_index && index < new_end_index {
                 clients_range.push((mac.clone(), client.clone()));
-            } else if index >= end_index {
+            } else if index >= new_end_index {
                 break;
             }
         }
@@ -358,6 +363,20 @@ impl ClientsMap {
                 } else if client.username_contains_ignore_case(pattern) {
                     clients.push(client.clone());
                 }                
+            }
+        }
+        (clients, self.clients.len()-1)
+    }
+
+    pub fn usernames_that_contain_with_macs(&self, start_index: usize, size: usize, pattern: &str) -> (Vec<(ipparser::MacAddress, Client)>, usize) {
+        let mut clients: Vec<(ipparser::MacAddress, Client)> = Vec::new();
+        for (index, (mac, client)) in self.clients.iter().enumerate() {
+            if index >= start_index {
+                if clients.len() == size {
+                    return (clients, index-1);
+                } else if client.username_contains_ignore_case(pattern) {
+                    clients.push((mac.clone(), client.clone()));
+                }
             }
         }
         (clients, self.clients.len()-1)

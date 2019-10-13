@@ -12,21 +12,29 @@ pub enum ReplyErrCodes {
     ClientDoesNotExist,
     UnsupportedListSize,
     ServerCapacityIsFull,
-    ServerInternalError
+    ServerInternalError,
+    WrongPassword,
+    OnlyIpv4Supported,
+    UnparsableRequest,
+    RemoteAdminIsNotAllowed
 }
 
 impl fmt::Display for ReplyErrCodes {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ReplyErrCodes::ClientDoesNotExist => write!(f, "{{\"err_code\":1,\"name\":\"ClientDoesNotExist\"}}"),
-            ReplyErrCodes::UnsupportedListSize => write!(f, "{{\"err_code\":2,\"name\":\"UnsupportedListSize\"}}"),
-            ReplyErrCodes::ServerCapacityIsFull => write!(f, "{{\"err_code\":3,\"name\":\"ServerCapacityIsFull\"}}"),
-            ReplyErrCodes::ServerInternalError => write!(f, "{{\"err_code\":4,\"name\":\"ServerInternalError\"}}"),
+            ReplyErrCodes::ClientDoesNotExist => write!(f, "{{\"error\":1,\"name\":\"ClientDoesNotExist\"}}"),
+            ReplyErrCodes::UnsupportedListSize => write!(f, "{{\"error\":2,\"name\":\"UnsupportedListSize\"}}"),
+            ReplyErrCodes::ServerCapacityIsFull => write!(f, "{{\"error\":3,\"name\":\"ServerCapacityIsFull\"}}"),
+            ReplyErrCodes::ServerInternalError => write!(f, "{{\"error\":4,\"name\":\"ServerInternalError\"}}"),
+            ReplyErrCodes::WrongPassword => write!(f, "{{\"error\":5,\"name\":\"WrongPassword\"}}"),
+            ReplyErrCodes::OnlyIpv4Supported => write!(f, "{{\"error\":6,\"name\":\"OnlyIPv4Supported\"}}"),
+            ReplyErrCodes::UnparsableRequest => write!(f, "{{\"error\":7,\"name\":\"UnparsableRequest\"}}"),
+            ReplyErrCodes::RemoteAdminIsNotAllowed => write!(f, "{{\"error\":8,\"name\":\"RemoteAdminIsNotAllowed\"}}")
         }
     }
 }
 
-pub fn reply_admin_drop(ip: &net::Ipv4Addr, clients_map: &mut clients::ClientsMap, _guilty: &net::SocketAddr) -> String {
+pub fn reply_admin_drop(ip: &net::Ipv4Addr, clients_map: &mut clients::ClientsMap) -> String {
     let ipv4 = ipparser::ipv4addr_to_u32(ip);
     if clients_map.exists_by_ipv4(ipv4) {
         if clients_map.drop_by_ipv4(ipv4) {
@@ -114,26 +122,27 @@ pub fn reply_admin_setkey(new_key: &str, server_key: &mut String) -> String {
     format!("{{\"result\":\"The key has been changed to {}\"}}", server_key)
 }
 
-pub fn reply_admin_getbymac(mac: &ipparser::MacAddress, clients_map: &clients::ClientsMap, _guilty: &net::SocketAddr) -> String {
+pub fn reply_admin_getbymac(mac: &ipparser::MacAddress, clients_map: &clients::ClientsMap) -> String {
     if let Some(client) = clients_map.get_by_mac(mac) {
         log::info!("{} was sent to the admin", mac);
-        format!("{{\"client\":{}}}", client.to_json_string_without_drop_votes_get_only_by_mac())
+        format!("{{\"client\":{}}}", client.to_json_string_with_mac(&mac))
     } else {
         log::info!("{} doesn't exist, but was requested by the admin", mac);
         format!("{}", ReplyErrCodes::ClientDoesNotExist)
     }
 }
 
-pub fn reply_admin_getbyusername(username: &str, clients_map: &clients::ClientsMap, list_size: u16, start_index: usize, _guilty: &net::SocketAddr) -> String {
+pub fn reply_admin_getbyusername(username: &str, clients_map: &clients::ClientsMap, list_size: u16, start_index: usize) -> String {
     if let Ok(list_size) = usize::try_from(list_size) {
-        let (clients, end_index) = clients_map.usernames_that_contain_get_by_mac_only(start_index, list_size, username);
-        if !clients.is_empty() {
+        let (clients, end_index) = clients_map.usernames_that_contain_with_macs(start_index, list_size, username);
+        if !clients.is_empty() { // This ensures that the vector at least contains 1 element
             let clients_len = clients.len();
             let mut json_array = String::from("[");
-            for client in clients {
-                json_array.push_str(client.to_json_string_without_drop_votes_get_only_by_mac().as_str());
+            for (mac, client) in clients {
+                json_array.push_str(client.to_json_string_with_mac(&mac).as_str());
                 json_array.push(',');
             }
+            json_array.pop(); // So we can act safely
             json_array.push_str("]");
             log::info!("{} client(s) named like \"{}\" were sent to the admin", clients_len, username);
             return format!("{{\"clients\":{},\"end_index\":{}}}", json_array, end_index);
@@ -147,15 +156,16 @@ pub fn reply_admin_getbyusername(username: &str, clients_map: &clients::ClientsM
     }
 }
 
-pub fn reply_admin_getbyindex(start_index: usize, end_index: usize, clients_map: &clients::ClientsMap, _guilty: &net::SocketAddr) -> String {
+pub fn reply_admin_getbyindex(start_index: usize, end_index: usize, clients_map: &clients::ClientsMap) -> String {
     let clients_range = clients_map.range(start_index, end_index);
     let list_len = clients_range.len();
-    if !clients_range.is_empty() {
+    if !clients_range.is_empty() { // This ensures that at least the vector contains 1 element
         let mut clients_json_array = String::from("[");
-        for (mac, client) in clients_range {
+        for (mac, client) in clients_range.iter() {
             clients_json_array.push_str(&client.to_json_string_with_mac(&mac));
             clients_json_array.push(',');
         }
+        clients_json_array.pop(); // So we can act safely
         clients_json_array.push(']');
         log::info!("The admin requested a list of clients by the range [{}, {}) [{} client(s)]", start_index, end_index, list_len);
         return format!("{{\"clients\":{}}}", clients_json_array);
@@ -165,7 +175,7 @@ pub fn reply_admin_getbyindex(start_index: usize, end_index: usize, clients_map:
     }
 }
 
-pub fn reply_client_getbymac(mac: &ipparser::MacAddress, clients_map: &clients::ClientsMap, guilty: &net::SocketAddr) -> String {
+pub fn reply_client_getbymac(mac: &ipparser::MacAddress, clients_map: &clients::ClientsMap, guilty: &net::SocketAddrV4) -> String {
     if let Some(client) = clients_map.get_by_mac(mac) {
         log::info!("{} was sent to {}", mac, guilty);
         format!("{{\"client\":{}}}", client.to_json_string_without_drop_votes_get_only_by_mac())
@@ -175,16 +185,17 @@ pub fn reply_client_getbymac(mac: &ipparser::MacAddress, clients_map: &clients::
     }
 }
 
-pub fn reply_client_getbyusername(username: &str, clients_map: &clients::ClientsMap, list_size: u16, start_index: usize, guilty: &net::SocketAddr) -> String {
+pub fn reply_client_getbyusername(username: &str, clients_map: &clients::ClientsMap, list_size: u16, start_index: usize, guilty: &net::SocketAddrV4) -> String {
     if let Ok(list_size) = usize::try_from(list_size) {
         let (clients, end_index) = clients_map.usernames_that_contain_get_by_mac_only(start_index, list_size, username);
-        if !clients.is_empty() {
+        if !clients.is_empty() { // This ensures that at least the vector contains 1 element
             let clients_len = clients.len();
             let mut json_array = String::from("[");
             for client in clients {
                 json_array.push_str(client.to_json_string_without_drop_votes_get_only_by_mac().as_str());
                 json_array.push(',');
             }
+            json_array.pop(); // So we can act safely
             json_array.push_str("]");
             log::info!("{} client(s) named like \"{}\" were sent to {}", clients_len, username, guilty);
             return format!("{{\"clients\":{},\"end_index\":{}}}", json_array, end_index);
@@ -198,7 +209,7 @@ pub fn reply_client_getbyusername(username: &str, clients_map: &clients::Clients
     }
 }
 
-pub fn reply_client_drop(ip: &net::Ipv4Addr, clients_map: &mut clients::ClientsMap, max_drop_votes: u8, guilty: &net::SocketAddr) -> String {
+pub fn reply_client_drop(ip: &net::Ipv4Addr, clients_map: &mut clients::ClientsMap, max_drop_votes: u8, guilty: &net::SocketAddrV4) -> String {
     let ipv4 = ipparser::ipv4addr_to_u32(ip);
     if clients_map.exists_by_ipv4(ipv4) {
         if clients_map.drop_vote_by_ipv4(ipv4, 1, max_drop_votes) {
@@ -220,7 +231,7 @@ pub fn reply_client_signup(clients_map: &mut clients::ClientsMap, username: &str
         if clients_map.len() < capaciy {
             match clients_map.insert(mac, &client) {
                 clients::InsertionType::Insert => {
-                    log::info!("We have a new client:\n{} = {}", mac, client);
+                    log::info!("New client: {} = {}", mac, client);
                     return format!("{{\"result\": \"You have been registered\"}}");
                 },
                 clients::InsertionType::Update => {

@@ -305,53 +305,53 @@ impl fmt::Display for Request {
             Request::Admin(admin_request) => {
                 match admin_request {
                     AdminRequest::GetByIndex { password: _password, start_index, end_index } => {
-                        write!(f, "AdminRequest::GetByIndex [{}, {})", start_index, end_index)
+                        write!(f, "Admin Get [{}, {})", start_index, end_index)
                     },
                     AdminRequest::GetByMac { password: _password, mac } => {
-                        write!(f, "AdminRequest::GetByMac {}", mac)
+                        write!(f, "Admin Get {}", mac)
                     },
                     AdminRequest::GetByUsername { password: _password, username, start_index } => {
-                        write!(f, "AdminRequest::GetByUsername \"{}\" starting from {}", username, start_index)
+                        write!(f, "Admin Get \"{}\" starting from {}", username, start_index)
                     },
                     AdminRequest::Drop { password: _password, ip } => {
-                        write!(f, "AdminRequest::Drop {}", ip)
+                        write!(f, "Admin Drop {}", ip)
                     },
                     AdminRequest::SetKey { password: _password, key } => {
-                        write!(f, "AdminRequest::SetKey {}", key)
+                        write!(f, "Admin Set Key {}", key)
                     },
                     AdminRequest::SetPassword { password: _password, new_password } => {
-                        write!(f, "AdminRequest::SetPassword {}", new_password)
+                        write!(f, "Admin Set Password {}", new_password)
                     },
                     AdminRequest::SetCapacity { password: _password, capacity } => {
-                        write!(f, "AdminRequest::SetCapacity {}", capacity)
+                        write!(f, "Admin Set Capacity {}", capacity)
                     },
                     AdminRequest::SetListSize { password: _password, list_size } => {
-                        write!(f, "AdminRequest::SetListSize {}", list_size)
+                        write!(f, "Admin Set ListSize {}", list_size)
                     },
                     AdminRequest::SetDropVerification { password: _password, drop_verification } => {
-                        write!(f, "AdminRequest::SetDropVerification {}", drop_verification)
+                        write!(f, "Admin Set DropVerification {}", drop_verification)
                     },
                     AdminRequest::SetDropVotes { password: _password, drop_votes } => {
-                        write!(f, "AdminRequest::SetDropVotes {}", drop_votes)
+                        write!(f, "Admin Set DropVotes {}", drop_votes)
                     }
                 }
             },
             Request::Client(client_request) => {
                 match client_request {                    
                     ClientRequest::GetByMac { password: _password, mac } => {
-                        write!(f, "ClientRequest::GetByMac {}", mac)
+                        write!(f, "Client Get {}", mac)
                     },
                     ClientRequest::GetByUsername { password: _password, username, start_index } => {
-                        write!(f, "ClientRequest::GetByUsername \"{}\" starting from {}", username, start_index)
+                        write!(f, "Client Get \"{}\" starting from {}", username, start_index)
                     },
                     ClientRequest::Drop { password: _password, ip } => {
-                        write!(f, "ClientRequest::Drop {}", ip)
+                        write!(f, "Client Drop {}", ip)
                     },
                     ClientRequest::SignUp { password: _password, username, mac, port, get_only_by_mac } => {
                         if *get_only_by_mac {
-                            write!(f, "ClientRequest::SignUp {} \"{}\" PORT: {} MAC-ONLY", mac, username, port)
+                            write!(f, "Client SignUp {} \"{}\" PORT: {} MAC-ONLY", mac, username, port)
                         } else {
-                            write!(f, "ClientRequest::SignUp {} \"{}\" PORT: {}", mac, username, port)
+                            write!(f, "Client SignUp {} \"{}\" PORT: {}", mac, username, port)
                         }
                     }
                 }
