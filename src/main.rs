@@ -15,8 +15,10 @@ fn sock_addr_validator(addr: String) -> Result<(), String> {
 }
 
 fn drop_votes_validator(dv: String) -> Result<(), String> {
-    if let Ok(_c) = dv.parse::<u8>() {
-       return Ok(()) ;
+    if let Ok(dv) = dv.parse::<u8>() {
+        if dv > 0 {
+            return Ok(()) ;
+        }
     }
     Err(format!("The drop votes number must be between [1-255]"))
 }
@@ -38,10 +40,10 @@ fn list_size_validator(l: String) -> Result<(), String> {
 
 fn capacity_validator(c: String) -> Result<(), String> {
     if let Ok(v) = c.parse::<u16>() {
-        if v < 2 {
-            return Err(format!("This value must be between [2,65535]"));
-        } else {
+        if v >= 2 {
             return Ok(());
+        } else {
+            return Err(format!("This value must be between [2,65535]"));
         }
     } else {
         return Err(format!("This value must be between [2,65535]"));

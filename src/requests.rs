@@ -59,7 +59,8 @@ impl Request {
                                                                 log::debug!("Request::from - parsing request: AdminRequest::GetByUsername how obtained (username)");
                                                                 if let Some(username) = request.get("username") {
                                                                     if let Some(username) = username.as_str() {
-                                                                        if clients::Client::is_valid_username(username) {
+                                                                        // if clients::Client::is_valid_username(username) {
+                                                                        if username.is_ascii() {
                                                                             log::debug!("Request::from - parsing request: AdminRequest::GetByUsername username obtained ({})", username);
                                                                             if let Some(start_index) = request.get("start_index") {
                                                                                 if let Some(start_index) = start_index.as_u64() {
@@ -72,6 +73,7 @@ impl Request {
                                                                                 } else { log::debug!("Request::from - parsing request: AdminRequest::GetByUsername start_index not obtained"); }
                                                                             } else { log::debug!("Request::from - parsing request: AdminRequest::GetByUsername start_index not obtained"); }
                                                                         } else { log::debug!("Request::from - parsing request: AdminRequest::GetByUsername incorrect username ({})", username); }
+                                                                        // } else { log::debug!("Request::from - parsing request: AdminRequest::GetByUsername incorrect username ({})", username); }
                                                                     } else { log::debug!("Request::from - parsing request: AdminRequest::GetByUsername username not obtained"); }
                                                                 } else { log::debug!("Request::from - parsing request: AdminRequest::GetByUsername username not obtained"); }
                                                             },
@@ -207,9 +209,11 @@ impl Request {
                                                             if let Some(capacity) = request.get("capacity") {
                                                                 if let Some(capacity) = capacity.as_u64(){
                                                                     if let Ok(capacity) = u16::try_from(capacity) {
-                                                                        log::debug!("Request::from - parsing request: AdminRequest::Set capacity obtained ({})", capacity);
-                                                                        log::debug!("Request::from - parsed request: AdminRequest::SetCapacity");
-                                                                        return Some(Request::Admin(AdminRequest::SetCapacity { password, capacity } ));
+                                                                        // if capacity > 1 {
+                                                                            log::debug!("Request::from - parsing request: AdminRequest::Set capacity obtained ({})", capacity);
+                                                                            log::debug!("Request::from - parsed request: AdminRequest::SetCapacity");
+                                                                            return Some(Request::Admin(AdminRequest::SetCapacity { password, capacity } ));
+                                                                        // } else { log::debug!("Request::from - parsing request: AdminRequest::Set incorrect capacity ({})", capacity); }                                                                        
                                                                     } else { log::debug!("Request::from - parsing request: AdminRequest::Set incorrect capacity ({})", capacity); }
                                                                 } else { log::debug!("Request::from - parsing request: AdminRequest::Set capacity not obtained"); }
                                                             } else { log::debug!("Request::from - parsing request: AdminRequest::Set capacity not obtained"); }
@@ -238,9 +242,11 @@ impl Request {
                                                             if let Some(drop_votes) = request.get("drop_votes") {
                                                                 if let Some(drop_votes) = drop_votes.as_u64(){
                                                                     if let Ok(drop_votes) = u8::try_from(drop_votes) {
-                                                                        log::debug!("Request::from - parsing request: AdminRequest::Set drop_votes obtained ({})", drop_votes);
-                                                                        log::debug!("Request::from - parsed request: AdminRequest::SetDropVotes");
-                                                                        return Some(Request::Admin(AdminRequest::SetDropVotes { password, drop_votes } ));
+                                                                        // if drop_votes > 0 {
+                                                                            log::debug!("Request::from - parsing request: AdminRequest::Set drop_votes obtained ({})", drop_votes);
+                                                                            log::debug!("Request::from - parsed request: AdminRequest::SetDropVotes");
+                                                                            return Some(Request::Admin(AdminRequest::SetDropVotes { password, drop_votes } ));
+                                                                        // } else { log::debug!("Request::from - parsing request: AdminRequest::Set incorrect drop_votes ({})", drop_votes); }
                                                                     } else { log::debug!("Request::from - parsing request: AdminRequest::Set incorrect drop_votes ({})", drop_votes); }
                                                                 } else { log::debug!("Request::from - parsing request: AdminRequest::Set drop_votes not obtained"); }
                                                             } else { log::debug!("Request::from - parsing request: AdminRequest::Set drop_votes not obtained"); }

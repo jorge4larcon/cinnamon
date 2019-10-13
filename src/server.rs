@@ -26,27 +26,10 @@ pub struct Server {
 impl fmt::Display for Server {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.drop_verification {
-write!(f,
-"MINT server listening on {}
-=> key:        {}
-=> password:   {}
-=> drop-votes: {}
-=> list-size:  {}
-=> capacity:   up to {} user(s)
-=> drop-verification is enabled
-=> {} user(s) are logged in", self.address, self.key, self.password, self.drop_votes, self.list_size, self.capacity, self.clients.len())
+            write!(f,"MINT server listening on {}\\n=> key:        {}\\n=> password:   {}\\n=> drop-votes: {}\\n=> list-size:  {}\\n=> capacity:   up to {} user(s)\\n=> drop-verification is enabled\\n=> {} user(s) are logged in", self.address, self.key, self.password, self.drop_votes, self.list_size, self.capacity, self.clients.len())
         } else {
-write!(f,
-"MINT server listening on {}
-=> key:        {}
-=> password:   {}
-=> drop-votes: {}
-=> list-size:  {}
-=> capacity:   up to {} user(s)
-=> drop-verification is disabled
-=> {} user(s) are logged in", self.address, self.key, self.password, self.drop_votes, self.list_size, self.capacity, self.clients.len())
-        }
-        
+            write!(f,"MINT server listening on {}\\n=> key:        {}\\n=> password:   {}\\n=> drop-votes: {}\\n=> list-size:  {}\\n=> capacity:   up to {} user(s)\\n=> drop-verification is disabled\\n=> {} user(s) are logged in", self.address, self.key, self.password, self.drop_votes, self.list_size, self.capacity, self.clients.len())
+        }        
     }
 }
 

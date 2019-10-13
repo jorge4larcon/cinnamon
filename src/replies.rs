@@ -52,23 +52,28 @@ pub fn reply_admin_drop(ip: &net::Ipv4Addr, clients_map: &mut clients::ClientsMa
 }
 
 pub fn reply_admin_setdropvotes(new_dv: u8, server_dv: &mut u8, clients_map: &mut clients::ClientsMap) -> String {
-    *server_dv = new_dv;
-    let dropped_clients = clients_map.drop_amount(*server_dv);
-    let mut list_of_dropped_clients = String::default();
-    for (index, (mac, client)) in dropped_clients.iter().enumerate() {
-        list_of_dropped_clients.push_str(&format!("[{}] {} {}\n", index, mac, client));
-    }
-    list_of_dropped_clients.push_str(&format!("{} client(s) were dropped out", list_of_dropped_clients.len()));
+    if new_dv > 0 {
+        *server_dv = new_dv;
+        let dropped_clients = clients_map.drop_amount(*server_dv);
+        let mut list_of_dropped_clients = String::default();
+        for (index, (mac, client)) in dropped_clients.iter().enumerate() {
+            list_of_dropped_clients.push_str(&format!("[{}] {} {}\n", index, mac, client));
+        }
+        list_of_dropped_clients.push_str(&format!("{} client(s) were dropped out", list_of_dropped_clients.len()));
 
-    let mut clients_json_array = String::from("[");
-    for (mac, client) in dropped_clients {
-        clients_json_array.push_str(&client.to_json_string_with_mac(&mac));
-        clients_json_array.push(',');
-    }
-    clients_json_array.push(']');
+        let mut clients_json_array = String::from("[");
+        for (mac, client) in dropped_clients {
+            clients_json_array.push_str(&client.to_json_string_with_mac(&mac));
+            clients_json_array.push(',');
+        }
+        clients_json_array.push(']');
 
-    log::warn!("The admin set the drop-votes value to {}, any client with an equal or greater amount will be dropped out\n{}", server_dv, list_of_dropped_clients);
-    format!("{{\"result\":\"The drop-votes value has been set to {}, any client with an equal or greater amount has been dropped out\",\"dropped_clients\":{}}}", server_dv, clients_json_array)
+        log::warn!("The admin set the drop-votes value to {}, any client with an equal or greater amount will be dropped out\n{}", server_dv, list_of_dropped_clients);
+        return format!("{{\"result\":\"The drop-votes value has been set to {}, any client with an equal or greater amount has been dropped out\",\"dropped_clients\":{}}}", server_dv, clients_json_array);
+    } else {
+        log::warn!("The admin tried to set the drop-votes value to 0, but drop-votes value must be in the range of [1,255]");
+        return format!("{{\"result\":\"The drop-votes value can't be 0, it must be in the range of [1,255]\",\"dropped_clients\":[]}}");
+    }
 }
 
 pub fn reply_admin_setdropverification(new_dv: bool, server_dv: &mut bool) -> String {
@@ -94,18 +99,23 @@ pub fn reply_admin_setlistsize(new_list_size: u16, server_list_size: &mut u16) -
 }
 
 pub fn reply_admin_setcapacity(new_capacity: u16, server_capacity: &mut u16, clients_map_len: usize) -> String {
-    *server_capacity = new_capacity;
-    if let Ok(clients_map_len) = u16::try_from(clients_map_len) {
-        if new_capacity < clients_map_len {
-            log::info!("The admin tried to set the capacity to {}, but there are {} clients signed up in the server, the request was rejected", new_capacity, clients_map_len);
-            format!("{{\"result\":\"There are {} clients signed up in the server, fist drop some and then set the capacity\"}}", clients_map_len)
+    if new_capacity >= 2 {
+        *server_capacity = new_capacity;
+        if let Ok(clients_map_len) = u16::try_from(clients_map_len) {
+            if new_capacity < clients_map_len {
+                log::info!("The admin tried to set the capacity to {}, but there are {} clients signed up in the server, the request was rejected", new_capacity, clients_map_len);
+                return format!("{{\"result\":\"There are {} clients signed up in the server, fist drop some and then set the capacity\"}}", clients_map_len);
+            } else {
+                log::info!("The admin set capacity to {}", server_capacity);
+                return format!("{{\"result\":\"The capacity has been changed to {}\"}}", server_capacity);
+            }
         } else {
-            log::info!("The admin set capacity to {}", server_capacity);
-            format!("{{\"result\":\"The capacity has been changed to {}\"}}", server_capacity)
+            log::error!("The admin tried to set the capacity, but there was an internal error casting an u16 to an usize and was rejected");
+            return format!("{}", ReplyErrCodes::ServerInternalError);
         }
     } else {
-        log::error!("The admin tried to set the capacity, but there was an internal error casting an u16 to an usize and was rejected");
-        format!("{}", ReplyErrCodes::ServerInternalError)
+        log::warn!("The admin tried to set the capacity value to {}, but capacity value must be in the range of [2,65535]", new_capacity);
+        return format!("{{\"result\":\"The capacity value can't be {}, it must be in the range of [2,65535]\"}}", new_capacity);
     }
 }
 
@@ -159,7 +169,7 @@ pub fn reply_admin_getbyusername(username: &str, clients_map: &clients::ClientsM
 
 pub fn reply_admin_getrunningconfiguration(server: &server::Server) -> String {
     log::info!("The admin asked for the server configuration");
-    format!("{{\"result\": \"{}\"}}", server)
+    format!("{{\"result\": \"running-config\",\"running_config\":\"{}\"}}", server)
 }
 
 pub fn reply_admin_getbyindex(start_index: usize, end_index: usize, clients_map: &clients::ClientsMap) -> String {
@@ -233,7 +243,8 @@ pub fn reply_client_drop(ip: &net::Ipv4Addr, clients_map: &mut clients::ClientsM
 
 pub fn reply_client_signup(clients_map: &mut clients::ClientsMap, username: &str, mac: &ipparser::MacAddress, ip: &net::Ipv4Addr, port: u16, get_only_by_mac: bool, capaciy: u16) -> String {
     let client = clients::Client { ipv4_addr: ipparser::ipv4addr_to_u32(ip), port, username: String::from(username), get_only_by_mac, drop_votes: 0 };    
-    if let Ok(capaciy) = usize::try_from(capaciy) {        
+    if let Ok(capaciy) = usize::try_from(capaciy) {
+        // If the client was logged we accept the request and update or replace the client
         if clients_map.len() < capaciy {
             match clients_map.insert(mac, &client) {
                 clients::InsertionType::Insert => {

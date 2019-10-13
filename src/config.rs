@@ -33,7 +33,7 @@ impl fmt::Display for StartConfig {
 }
 
 impl StartConfig {
-    pub fn new(matches: clap::ArgMatches) -> Option<StartConfig> {        
+    pub fn new(matches: clap::ArgMatches) -> Option<StartConfig> {
         if let Some(matches) = matches.subcommand_matches("start") {            
             let address: net::SocketAddrV4;
             if let Some(addr) = matches.value_of("address") {
@@ -45,7 +45,9 @@ impl StartConfig {
             let drop_votes: u8;
             if let Some(dv) = matches.value_of("drop-votes") {                
                 if let Ok(dv) = dv.parse::<u8>() {
-                    drop_votes = dv;
+                    if dv > 0 {
+                        drop_votes = dv;
+                    } else { return None; }                    
                 } else { return None; }
             } else { return None; }            
 

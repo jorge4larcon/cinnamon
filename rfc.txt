@@ -1,2 +1,5 @@
 --enable-remote-admin
 remote-admin
+
+Capacity = [2, 65535]
+Drop votes = [1, 255]
