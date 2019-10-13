@@ -157,7 +157,7 @@ pub fn reply_admin_getbyusername(username: &str, clients_map: &clients::ClientsM
     }
 }
 
-pub fn reply_admin_getactualconfiguration(server: &server::Server) -> String {
+pub fn reply_admin_getrunningconfiguration(server: &server::Server) -> String {
     log::info!("The admin asked for the server configuration");
     format!("{{\"config\": \"{}\"}}", server)
 }

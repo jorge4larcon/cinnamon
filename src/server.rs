@@ -115,9 +115,9 @@ impl Server {
                                                                 reply = replies::ReplyErrCodes::WrongPassword.to_string();
                                                             }
                                                         },
-                                                        requests::AdminRequest::GetActualConfiguration { password } => {
+                                                        requests::AdminRequest::GetRunningConfiguration { password } => {
                                                             if self.key == password {
-                                                                reply = replies::reply_admin_getactualconfiguration(&self);
+                                                                reply = replies::reply_admin_getrunningconfiguration(&self);
                                                             } else { 
                                                                 log::info!("The admin {} forgot the password", peer_addr);
                                                                 reply = replies::ReplyErrCodes::WrongPassword.to_string();
