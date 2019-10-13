@@ -78,7 +78,7 @@ impl Client {
 
     pub fn is_valid_username(username: &str) -> bool {
         if username.is_ascii() {
-            let username_regex =regex::Regex::new(r"^[a-zA-Z0-9_-]{3,24}$").unwrap();
+            let username_regex = regex::Regex::new(r"^[a-zA-Z0-9_-]{3,24}$").unwrap();
             return username_regex.is_match(username);
         }
         false

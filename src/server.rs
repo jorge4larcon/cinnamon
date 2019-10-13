@@ -10,6 +10,7 @@ use crate::clients;
 use crate::config;
 use crate::requests;
 use crate::replies;
+use std::fmt;
 
 pub struct Server {
     pub clients: clients::ClientsMap,
@@ -20,6 +21,33 @@ pub struct Server {
     pub capacity: u16,
     pub list_size: u16,
     pub drop_verification: bool
+}
+
+impl fmt::Display for Server {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.drop_verification {
+write!(f,
+"MINT server listening on {}
+=> key:        {}
+=> password:   {}
+=> drop-votes: {}
+=> list-size:  {}
+=> capacity:   up to {} user(s)
+=> drop-verification is enabled
+=> {} user(s) are logged in", self.address, self.key, self.password, self.drop_votes, self.list_size, self.capacity, self.clients.len())
+        } else {
+write!(f,
+"MINT server listening on {}
+=> key:        {}
+=> password:   {}
+=> drop-votes: {}
+=> list-size:  {}
+=> capacity:   up to {} user(s)
+=> drop-verification is disabled
+=> {} user(s) are logged in", self.address, self.key, self.password, self.drop_votes, self.list_size, self.capacity, self.clients.len())
+        }
+        
+    }
 }
 
 impl Server {
@@ -82,6 +110,14 @@ impl Server {
                                                         requests::AdminRequest::GetByUsername { password, username, start_index } => {
                                                             if self.key == password {
                                                                 reply = replies::reply_admin_getbyusername(&username, &self.clients, self.list_size, start_index);
+                                                            } else { 
+                                                                log::info!("The admin {} forgot the password", peer_addr);
+                                                                reply = replies::ReplyErrCodes::WrongPassword.to_string();
+                                                            }
+                                                        },
+                                                        requests::AdminRequest::GetActualConfiguration { password } => {
+                                                            if self.key == password {
+                                                                reply = replies::reply_admin_getactualconfiguration(&self);
                                                             } else { 
                                                                 log::info!("The admin {} forgot the password", peer_addr);
                                                                 reply = replies::ReplyErrCodes::WrongPassword.to_string();

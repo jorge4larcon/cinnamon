@@ -92,6 +92,11 @@ impl Request {
                                                                     } else { log::debug!("Request::from - parsing request: AdminRequest::GetByIndex start_index not obtained"); }
                                                                 } else { log::debug!("Request::from - parsing request: AdminRequest::GetByIndex start_index not obtained"); }
                                                             },
+                                                            "actual_configuration" => { // AdminRequest::GetActualConfiguration
+                                                                log::debug!("Request::from - parsing request: AdminRequest::GetByIndex how obtained (actual_configuration)");
+                                                                log::debug!("Request::from - parsed request: AdminRequest::GetActualConfiguration");
+                                                                return Some(Request::Admin(AdminRequest::GetActualConfiguration { password } ))
+                                                            }
                                                             _ => {
                                                                 log::debug!("Request::from - parsing request: AdminRequest::Get incorrect how type ({})", how);
                                                                 return None;
@@ -313,6 +318,9 @@ impl fmt::Display for Request {
                     AdminRequest::GetByUsername { password: _password, username, start_index } => {
                         write!(f, "Admin Get \"{}\" starting from {}", username, start_index)
                     },
+                    AdminRequest::GetActualConfiguration { password: _password } => {
+                        write!(f, "Admin Get running configuration")
+                    },
                     AdminRequest::Drop { password: _password, ip } => {
                         write!(f, "Admin Drop {}", ip)
                     },
@@ -376,6 +384,9 @@ pub enum AdminRequest {
         username: String,
         start_index: usize
     },
+    GetActualConfiguration {
+        password: String
+    },
     Drop {
         password: String,
         ip: net::Ipv4Addr
@@ -417,6 +428,9 @@ impl fmt::Display for AdminRequest {
             },
             AdminRequest::GetByUsername { password: _password, username, start_index } => {
                 write!(f, "AdminRequest::GetByUsername \"{}\" starting from {}", username, start_index)
+            },
+            AdminRequest::GetActualConfiguration { password: _password } => {
+                write!(f, "Admin Get running configuration")
             },
             AdminRequest::Drop { password: _password, ip } => {
                 write!(f, "AdminRequest::Drop {}", ip)

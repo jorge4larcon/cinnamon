@@ -7,6 +7,7 @@ use crate::ipparser;
 use std::fmt;
 use std::convert::TryFrom;
 use std::net;
+use crate::server;
 
 pub enum ReplyErrCodes {
     ClientDoesNotExist,
@@ -154,6 +155,11 @@ pub fn reply_admin_getbyusername(username: &str, clients_map: &clients::ClientsM
         log::error!("The admin tried to get a list of usernames, but there was an internal error casting an u16 to an usize and was rejected");
         return format!("{}", ReplyErrCodes::UnsupportedListSize);
     }
+}
+
+pub fn reply_admin_getactualconfiguration(server: &server::Server) -> String {
+    log::info!("The admin asked for the server configuration");
+    format!("{{\"config\": \"{}\"}}", server)
 }
 
 pub fn reply_admin_getbyindex(start_index: usize, end_index: usize, clients_map: &clients::ClientsMap) -> String {

@@ -7,7 +7,7 @@ use std::process;
 use clap::{Arg, App, SubCommand, AppSettings};
 
 
-fn sock_addr_validator(addr: String) -> Result<(), String> {    
+fn sock_addr_validator(addr: String) -> Result<(), String> {
     if ipparser::is_socket_addr_v4(addr.as_str()) {
         return Ok(());
     }
@@ -28,44 +28,24 @@ fn password_validator(pass: String) -> Result<(), String> {
     Err(format!("Password and key must contain only ascii characters and less than 33 characters"))
 }
 
-// Correct values go from 1 to ALL
-fn gets_list_limit(l: String) -> Result<(), String> {
-    if l.is_ascii() {
-        if l.to_uppercase() == "ALL" {
+fn list_size_validator(l: String) -> Result<(), String> {
+    if let Ok(_v) = l.parse::<u16>() {
             return Ok(());
-        } else {
-            if let Ok(v) = l.parse::<u16>() {
-                if v < 1 {
-                    return Err(format!("This value must be between [1-65535]"));
-                } else {
-                    return Ok(());
-                }
-            } else {
-                return Err(format!("This value must be between [1-65535]"));
-            }
-        }
-    }
-    return Err(format!("This value must be between [1-4294967295]"));
+    } else {
+        return Err(format!("This value must be between [0,65535]"));
+    }        
 }
 
 fn capacity_validator(c: String) -> Result<(), String> {
-    if c.is_ascii() {
-        let c = c.to_uppercase();
-        if c == "MAX" || c == "MIN" {
-            return Ok(());
+    if let Ok(v) = c.parse::<u16>() {
+        if v < 2 {
+            return Err(format!("This value must be between [2,65535]"));
         } else {
-            if let Ok(v) = c.parse::<u16>() {
-                if v < 2 {
-                    return Err(format!("This value must be between [2-65535]"));
-                } else {
-                    return Ok(());
-                }
-            } else {
-                return Err(format!("This value must be between [2-65535]"));
-            }
+            return Ok(());
         }
+    } else {
+        return Err(format!("This value must be between [2,65535]"));
     }
-    return Err(format!("This value must be between [2-65535]"));
 }
 
 fn main() {
@@ -137,13 +117,13 @@ fn main() {
                                         .arg(Arg::with_name("list-size")
                                             .short("l")
                                             .long("list-size")
-                                            .value_name("GET'S LIST SIZE")
+                                            .value_name("LIST SIZE")
                                             .help("Sets how many users the server will send to a GET request")
                                             .default_value("5")
                                             .takes_value(true)
                                             .required(false)
                                             .number_of_values(1)
-                                            .validator(gets_list_limit))
+                                            .validator(list_size_validator))
                                         .arg(Arg::with_name("capacity")
                                             .short("c")
                                             .long("capacity")
