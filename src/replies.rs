@@ -67,8 +67,8 @@ pub fn reply_admin_setdropvotes(new_dv: u8, server_dv: &mut u8, clients_map: &mu
     }
     clients_json_array.push(']');
 
-    log::warn!("The admin set the drop-votes to {}, any client with an equal or greater amount will be dropped out\n{}", server_dv, list_of_dropped_clients);
-    format!("{{\"result\":\"The drop-votes has been set to {}, any client with an equal or greater amount has been dropped out\",\"dropped_clients\":{}}}", server_dv, clients_json_array)
+    log::warn!("The admin set the drop-votes value to {}, any client with an equal or greater amount will be dropped out\n{}", server_dv, list_of_dropped_clients);
+    format!("{{\"result\":\"The drop-votes value has been set to {}, any client with an equal or greater amount has been dropped out\",\"dropped_clients\":{}}}", server_dv, clients_json_array)
 }
 
 pub fn reply_admin_setdropverification(new_dv: bool, server_dv: &mut bool) -> String {
@@ -126,7 +126,7 @@ pub fn reply_admin_setkey(new_key: &str, server_key: &mut String) -> String {
 pub fn reply_admin_getbymac(mac: &ipparser::MacAddress, clients_map: &clients::ClientsMap) -> String {
     if let Some(client) = clients_map.get_by_mac(mac) {
         log::info!("{} was sent to the admin", mac);
-        format!("{{\"client\":{}}}", client.to_json_string_with_mac(&mac))
+        format!("{{\"result\":\"the client was found\",\"client\":{}}}", client.to_json_string_with_mac(&mac))
     } else {
         log::info!("{} doesn't exist, but was requested by the admin", mac);
         format!("{}", ReplyErrCodes::ClientDoesNotExist)
@@ -146,7 +146,7 @@ pub fn reply_admin_getbyusername(username: &str, clients_map: &clients::ClientsM
             json_array.pop(); // So we can act safely
             json_array.push_str("]");
             log::info!("{} client(s) named like \"{}\" were sent to the admin", clients_len, username);
-            return format!("{{\"clients\":{},\"end_index\":{}}}", json_array, end_index);
+            return format!("{{\"result\":\"{} client(s)\",\"clients\":{},\"end_index\":{}}}", clients_len, json_array, end_index);
         } else {
             log::info!("No clients named like \"{}\" were sent to the admin", username);
             return format!("{}", ReplyErrCodes::ClientDoesNotExist);
@@ -159,7 +159,7 @@ pub fn reply_admin_getbyusername(username: &str, clients_map: &clients::ClientsM
 
 pub fn reply_admin_getrunningconfiguration(server: &server::Server) -> String {
     log::info!("The admin asked for the server configuration");
-    format!("{{\"config\": \"{}\"}}", server)
+    format!("{{\"result\": \"{}\"}}", server)
 }
 
 pub fn reply_admin_getbyindex(start_index: usize, end_index: usize, clients_map: &clients::ClientsMap) -> String {
@@ -174,10 +174,10 @@ pub fn reply_admin_getbyindex(start_index: usize, end_index: usize, clients_map:
         clients_json_array.pop(); // So we can act safely
         clients_json_array.push(']');
         log::info!("The admin requested a list of clients by the range [{}, {}) [{} client(s)]", start_index, end_index, list_len);
-        return format!("{{\"clients\":{}}}", clients_json_array);
+        return format!("{{\"result\":\"{} client(s)\",\"clients\":{}}}", clients_range.len(), clients_json_array);
     } else {
         log::info!("The admin requested a list of clients by the range [{}, {}), but there were no clients in that range", start_index, end_index);
-        return format!("{{\"clients\":[]}}");
+        return format!("{{\"result\":\"{} client(s)\",\"clients\":[]}}", clients_range.len());
     }
 }
 
