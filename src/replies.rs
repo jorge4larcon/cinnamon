@@ -93,8 +93,8 @@ pub fn reply_admin_setlistsize(new_list_size: u16, server_list_size: &mut u16) -
     *server_list_size = new_list_size;
 
     if *server_list_size == 0 {
-        log::warn!("The admin set the list size to {}, no clients will be sended when ClientRequest::GetByUsername", server_list_size);
-        format!("{{\"result\":\"The list size has been changed to {}, no clients will be sended when ClientRequest::GetByUsername\"}}", server_list_size)
+        log::warn!("The admin set the list size to {}, no clients will be sent when ClientRequest::GetByUsername", server_list_size);
+        format!("{{\"result\":\"The list size has been changed to {}, no clients will be sent when ClientRequest::GetByUsername\"}}", server_list_size)
     } else {
         log::info!("The admin set the list size to {}", server_list_size);
         format!("{{\"result\":\"The list size has been changed to {}\"}}", server_list_size)
