@@ -333,6 +333,10 @@ impl ClientsMap {
         false
     }
 
+    pub fn exists_by_mac(&self, mac: &ipparser::MacAddress) -> bool {
+        self.clients.contains_key(mac)
+    }
+
     pub fn range(&self, start_index: usize, end_index: usize) -> Vec<(ipparser::MacAddress, Client)> {
         let mut clients_range: Vec<(ipparser::MacAddress, Client)> = Vec::new();
         if start_index >= self.clients.len() /*|| end_index > self.clients.len() */|| start_index == end_index || start_index > end_index {

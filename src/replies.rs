@@ -103,11 +103,11 @@ pub fn reply_admin_setcapacity(new_capacity: u16, server_capacity: &mut u16, cli
         *server_capacity = new_capacity;
         if let Ok(clients_map_len) = u16::try_from(clients_map_len) {
             if new_capacity < clients_map_len {
-                log::info!("The admin tried to set the capacity to {}, but there are {} clients signed up in the server, the request was rejected", new_capacity, clients_map_len);
-                return format!("{{\"result\":\"There are {} clients signed up in the server, fist drop some and then set the capacity\"}}", clients_map_len);
+                log::info!("The admin tried to set the capacity to {} client(s), but there are {} client(s) signed up in the server, the request was rejected", new_capacity, clients_map_len);
+                return format!("{{\"result\":\"There are {} clients signed up in the server, first drop some and then set the capacity\"}}", clients_map_len);
             } else {
-                log::info!("The admin set capacity to {}", server_capacity);
-                return format!("{{\"result\":\"The capacity has been changed to {}\"}}", server_capacity);
+                log::info!("The admin set the capacity to {} client(s)", server_capacity);
+                return format!("{{\"result\":\"The capacity has been changed to {} client(s)\"}}", server_capacity);
             }
         } else {
             log::error!("The admin tried to set the capacity, but there was an internal error casting an u16 to an usize and was rejected");
@@ -244,11 +244,27 @@ pub fn reply_client_drop(ip: &net::Ipv4Addr, clients_map: &mut clients::ClientsM
 pub fn reply_client_signup(clients_map: &mut clients::ClientsMap, username: &str, mac: &ipparser::MacAddress, ip: &net::Ipv4Addr, port: u16, get_only_by_mac: bool, capaciy: u16) -> String {
     let client = clients::Client { ipv4_addr: ipparser::ipv4addr_to_u32(ip), port, username: String::from(username), get_only_by_mac, drop_votes: 0 };    
     if let Ok(capaciy) = usize::try_from(capaciy) {
-        // If the client was logged we accept the request and update or replace the client
-        if clients_map.len() < capaciy {
+        // If the client was logged we accept the request and update or replace the client, if not
+        // we check if it's possible to save another client
+        if clients_map.exists_by_ipv4(ipparser::ipv4addr_to_u32(ip)) || clients_map.exists_by_mac(mac) {
             match clients_map.insert(mac, &client) {
                 clients::InsertionType::Insert => {
-                    log::info!("New client: {} = {}", mac, client);
+                    log::info!("New client {} {}", mac, client);
+                    return format!("{{\"result\": \"You have been registered\"}}");
+                },
+                clients::InsertionType::Update => {
+                    log::info!("The client {} has been updated", mac);
+                    return format!("{{\"result\": \"Your data has been updated\"}}");
+                },
+                clients::InsertionType::Replace { client_mac_replaced } => {
+                    log::info!("The client {} was replaced by {} {}", client_mac_replaced, mac, ip);
+                    return format!("{{\"result\": \"You have been registered\"}}");
+                }
+            }
+        } else if clients_map.len() < capaciy {
+            match clients_map.insert(mac, &client) {
+                clients::InsertionType::Insert => {
+                    log::info!("New client {} {}", mac, client);
                     return format!("{{\"result\": \"You have been registered\"}}");
                 },
                 clients::InsertionType::Update => {

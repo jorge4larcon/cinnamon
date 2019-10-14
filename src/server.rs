@@ -26,9 +26,9 @@ pub struct Server {
 impl fmt::Display for Server {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.drop_verification {
-            write!(f,"MINT server listening on {}\\n=> key:        {}\\n=> password:   {}\\n=> drop-votes: {}\\n=> list-size:  {}\\n=> capacity:   up to {} user(s)\\n=> drop-verification is enabled\\n=> {} user(s) are logged in", self.address, self.key, self.password, self.drop_votes, self.list_size, self.capacity, self.clients.len())
+            write!(f,"MINT server listening on {}\\n=> key:        {}\\n=> password:   {}\\n=> drop-votes: {}\\n=> list-size:  {}\\n=> capacity:   up to {} user(s)\\n=> drop-verification is enabled\\n=> {} user(s) are signed up", self.address, self.key, self.password, self.drop_votes, self.list_size, self.capacity, self.clients.len())
         } else {
-            write!(f,"MINT server listening on {}\\n=> key:        {}\\n=> password:   {}\\n=> drop-votes: {}\\n=> list-size:  {}\\n=> capacity:   up to {} user(s)\\n=> drop-verification is disabled\\n=> {} user(s) are logged in", self.address, self.key, self.password, self.drop_votes, self.list_size, self.capacity, self.clients.len())
+            write!(f,"MINT server listening on {}\\n=> key:        {}\\n=> password:   {}\\n=> drop-votes: {}\\n=> list-size:  {}\\n=> capacity:   up to {} user(s)\\n=> drop-verification is disabled\\n=> {} user(s) are signed up", self.address, self.key, self.password, self.drop_votes, self.list_size, self.capacity, self.clients.len())
         }        
     }
 }
@@ -214,7 +214,7 @@ impl Server {
 
                             if let Ok(bytes_written) = stream.write(reply.as_bytes()) {
                                 if bytes_written == reply.len() {
-                                    log::info!("{} from {} Ok!", request_type, peer_addr);
+                                    log::debug!("{} from {} Ok!", request_type, peer_addr);
                                 } else {
                                     log::error!("{} Err! I sent {} of {} bytes to {}", request_type, bytes_written, reply.as_bytes().len(), peer_addr);
                                 }
