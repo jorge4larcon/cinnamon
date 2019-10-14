@@ -1,5 +1,8 @@
---enable-remote-admin
-remote-admin
+Features recommended:
+--remote-admin
+--force-signup => to do drop or get client must be signed up
 
+
+This values have to always be:
 Capacity = [2, 65535]
 Drop votes = [1, 255]
