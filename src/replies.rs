@@ -62,9 +62,12 @@ pub fn reply_admin_setdropvotes(new_dv: u8, server_dv: &mut u8, clients_map: &mu
         list_of_dropped_clients.push_str(&format!("{} client(s) were dropped out", list_of_dropped_clients.len()));
 
         let mut clients_json_array = String::from("[");
-        for (mac, client) in dropped_clients {
-            clients_json_array.push_str(&client.to_json_string_with_mac(&mac));
-            clients_json_array.push(',');
+        if dropped_clients.len() > 0 {
+            for (mac, client) in dropped_clients {
+                clients_json_array.push_str(&client.to_json_string_with_mac(&mac));
+                clients_json_array.push(',');
+            }
+            clients_json_array.pop();            
         }
         clients_json_array.push(']');
 
