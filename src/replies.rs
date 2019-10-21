@@ -35,23 +35,23 @@ impl fmt::Display for ReplyErrCodes {
     }
 }
 
-pub fn reply_admin_drop(ip: &net::Ipv4Addr, clients_map: &mut clients::ClientsMap) -> String {
+pub fn reply_admin_drop(ip: &net::Ipv4Addr, clients_map: &mut clients::ClientsMap, guilty: &net::SocketAddrV4) -> String {
     let ipv4 = ipparser::ipv4addr_to_u32(ip);
     if clients_map.exists_by_ipv4(ipv4) {
         if clients_map.drop_by_ipv4(ipv4) {
-            log::info!("The admin dropped out the client {}", ip);
+            log::info!("The admin {} dropped out the client {}", guilty, ip);
             return format!("{{\"result\":\"Client was dropped out\"}}");
         } else {            
-            log::error!("The admin wanted to drop the client {}, the client exists but was not dropped out", ip);
+            log::error!("The admin {} wanted to drop the client {}, the client exists but was not dropped out", guilty, ip);
             return format!("{{\"result\":\"Client was not dropped out\"}}");
         }
     } else {
-        log::info!("The client {} doesn't exist but the admin tried to drop it", ip);
+        log::info!("The client {} doesn't exist but the admin {} tried to drop it", ip, guilty);
         return format!("{}", ReplyErrCodes::ClientDoesNotExist);
     }
 }
 
-pub fn reply_admin_setdropvotes(new_dv: u8, server_dv: &mut u8, clients_map: &mut clients::ClientsMap) -> String {
+pub fn reply_admin_setdropvotes(new_dv: u8, server_dv: &mut u8, clients_map: &mut clients::ClientsMap, guilty: &net::SocketAddrV4) -> String {
     if new_dv > 0 {
         *server_dv = new_dv;
         let dropped_clients = clients_map.drop_amount(*server_dv);
@@ -67,86 +67,86 @@ pub fn reply_admin_setdropvotes(new_dv: u8, server_dv: &mut u8, clients_map: &mu
                 clients_json_array.push_str(&client.to_json_string_with_mac(&mac));
                 clients_json_array.push(',');
             }
-            clients_json_array.pop();            
+            clients_json_array.pop();
         }
         clients_json_array.push(']');
 
-        log::warn!("The admin set the drop-votes value to {}, any client with an equal or greater amount will be dropped out\n{}", server_dv, list_of_dropped_clients);
+        log::warn!("The admin {} set the drop-votes value to {}, any client with an equal or greater amount will be dropped out\n{}", guilty, server_dv, list_of_dropped_clients);
         return format!("{{\"result\":\"The drop-votes value has been set to {}, any client with an equal or greater amount has been dropped out\",\"dropped_clients\":{}}}", server_dv, clients_json_array);
     } else {
-        log::warn!("The admin tried to set the drop-votes value to 0, but drop-votes value must be in the range of [1,255]");
+        log::warn!("The admin {} tried to set the drop-votes value to 0, but drop-votes value must be in the range of [1,255]", guilty);
         return format!("{{\"result\":\"The drop-votes value can't be 0, it must be in the range of [1,255]\",\"dropped_clients\":[]}}");
     }
 }
 
-pub fn reply_admin_setdropverification(new_dv: bool, server_dv: &mut bool) -> String {
+pub fn reply_admin_setdropverification(new_dv: bool, server_dv: &mut bool, guilty: &net::SocketAddrV4) -> String {
     *server_dv = new_dv;
     if *server_dv {
-        log::info!("The admin enabled the drop-verification");        
+        log::info!("The admin {} enabled the drop-verification", guilty);
     } else {
-        log::info!("The admin disabled the drop-verification");
+        log::info!("The admin {} disabled the drop-verification", guilty);
     }
     format!("{{\"result\":\"The drop-verification has been set to {}\"}}", server_dv)
 }
 
-pub fn reply_admin_setlistsize(new_list_size: u16, server_list_size: &mut u16) -> String {
+pub fn reply_admin_setlistsize(new_list_size: u16, server_list_size: &mut u16, guilty: &net::SocketAddrV4) -> String {
     *server_list_size = new_list_size;
 
     if *server_list_size == 0 {
-        log::warn!("The admin set the list size to {}, no clients will be sent when ClientRequest::GetByUsername", server_list_size);
+        log::warn!("The admin {} set the list size to {}, no clients will be sent when ClientRequest::GetByUsername", guilty, server_list_size);
         format!("{{\"result\":\"The list size has been changed to {}, no clients will be sent when ClientRequest::GetByUsername\"}}", server_list_size)
     } else {
-        log::info!("The admin set the list size to {}", server_list_size);
+        log::info!("The admin {} set the list size to {}", guilty, server_list_size);
         format!("{{\"result\":\"The list size has been changed to {}\"}}", server_list_size)
     }
 }
 
-pub fn reply_admin_setcapacity(new_capacity: u16, server_capacity: &mut u16, clients_map_len: usize) -> String {
+pub fn reply_admin_setcapacity(new_capacity: u16, server_capacity: &mut u16, clients_map_len: usize, guilty: &net::SocketAddrV4) -> String {
     if new_capacity >= 2 {
         *server_capacity = new_capacity;
         if let Ok(clients_map_len) = u16::try_from(clients_map_len) {
             if new_capacity < clients_map_len {
-                log::info!("The admin tried to set the capacity to {} client(s), but there are {} client(s) signed up in the server, the request was rejected", new_capacity, clients_map_len);
+                log::info!("The admin {} tried to set the capacity to {} client(s), but there are {} client(s) signed up in the server, the request was rejected", guilty, new_capacity, clients_map_len);
                 return format!("{{\"result\":\"There are {} clients signed up in the server, first drop some and then set the capacity\"}}", clients_map_len);
             } else {
-                log::info!("The admin set the capacity to {} client(s)", server_capacity);
+                log::info!("The admin {} set the capacity to {} client(s)", guilty, server_capacity);
                 return format!("{{\"result\":\"The capacity has been changed to {} client(s)\"}}", server_capacity);
             }
         } else {
-            log::error!("The admin tried to set the capacity, but there was an internal error casting an u16 to an usize and was rejected");
+            log::error!("The admin {} tried to set the capacity, but there was an internal error casting an u16 to an usize and was rejected", guilty);
             return format!("{}", ReplyErrCodes::ServerInternalError);
         }
     } else {
-        log::warn!("The admin tried to set the capacity value to {}, but capacity value must be in the range of [2,65535]", new_capacity);
+        log::warn!("The admin {} tried to set the capacity value to {}, but capacity value must be in the range of [2,65535]", guilty, new_capacity);
         return format!("{{\"result\":\"The capacity value can't be {}, it must be in the range of [2,65535]\"}}", new_capacity);
     }
 }
 
-pub fn reply_admin_setpassword(new_password: &str, server_password: &mut String) -> String {
+pub fn reply_admin_setpassword(new_password: &str, server_password: &mut String, guilty: &net::SocketAddrV4) -> String {
     server_password.clear();
     server_password.push_str(new_password);
-    log::info!("The admin set the password to {}", server_password);
+    log::info!("The admin {} set the password to {}", guilty, server_password);
     format!("{{\"result\":\"The password has been changed to {}\"}}", server_password)
 }
 
-pub fn reply_admin_setkey(new_key: &str, server_key: &mut String) -> String {
+pub fn reply_admin_setkey(new_key: &str, server_key: &mut String, guilty: &net::SocketAddrV4) -> String {
     server_key.clear();
     server_key.push_str(new_key);
-    log::info!("The admin set the key to {}", server_key);
+    log::info!("The admin {} set the key to {}", guilty, server_key);
     format!("{{\"result\":\"The key has been changed to {}\"}}", server_key)
 }
 
-pub fn reply_admin_getbymac(mac: &ipparser::MacAddress, clients_map: &clients::ClientsMap) -> String {
+pub fn reply_admin_getbymac(mac: &ipparser::MacAddress, clients_map: &clients::ClientsMap, guilty: &net::SocketAddrV4) -> String {
     if let Some(client) = clients_map.get_by_mac(mac) {
-        log::info!("{} was sent to the admin", mac);
+        log::info!("{} was sent to the admin {}", mac, guilty);
         format!("{{\"result\":\"the client was found\",\"client\":{}}}", client.to_json_string_with_mac(&mac))
     } else {
-        log::info!("{} doesn't exist, but was requested by the admin", mac);
+        log::info!("{} doesn't exist, but was requested by the admin {}", mac, guilty);
         format!("{}", ReplyErrCodes::ClientDoesNotExist)
     }
 }
 
-pub fn reply_admin_getbyusername(username: &str, clients_map: &clients::ClientsMap, list_size: u16, start_index: usize) -> String {
+pub fn reply_admin_getbyusername(username: &str, clients_map: &clients::ClientsMap, list_size: u16, start_index: usize, guilty: &net::SocketAddrV4) -> String {
     if let Ok(list_size) = usize::try_from(list_size) {
         let (clients, end_index) = clients_map.usernames_that_contain_with_macs(start_index, list_size, username);
         if !clients.is_empty() { // This ensures that the vector at least contains 1 element
@@ -158,24 +158,24 @@ pub fn reply_admin_getbyusername(username: &str, clients_map: &clients::ClientsM
             }
             json_array.pop(); // So we can act safely
             json_array.push_str("]");
-            log::info!("{} client(s) named like \"{}\" were sent to the admin", clients_len, username);
+            log::info!("{} client(s) named like \"{}\" were sent to the admin {}", clients_len, username, guilty);
             return format!("{{\"result\":\"{} client(s)\",\"clients\":{},\"end_index\":{}}}", clients_len, json_array, end_index);
         } else {
-            log::info!("No clients named like \"{}\" were sent to the admin", username);
+            log::info!("No clients named like \"{}\" were sent to the admin {}", username, guilty);
             return format!("{}", ReplyErrCodes::ClientDoesNotExist);
         }        
     } else {
-        log::error!("The admin tried to get a list of usernames, but there was an internal error casting an u16 to an usize and was rejected");
+        log::error!("The admin {} tried to get a list of usernames, but there was an internal error casting an u16 to an usize and was rejected", guilty);
         return format!("{}", ReplyErrCodes::UnsupportedListSize);
     }
 }
 
-pub fn reply_admin_getrunningconfiguration(server: &server::Server) -> String {
-    log::info!("The admin asked for the server configuration");
+pub fn reply_admin_getrunningconfiguration(server: &server::Server, guilty: &net::SocketAddrV4) -> String {
+    log::info!("The admin {} asked for the server configuration", guilty);
     format!("{{\"result\": \"running-config\",\"running_config\":\"{}\"}}", server)
 }
 
-pub fn reply_admin_getbyindex(start_index: usize, end_index: usize, clients_map: &clients::ClientsMap) -> String {
+pub fn reply_admin_getbyindex(start_index: usize, end_index: usize, clients_map: &clients::ClientsMap, guilty: &net::SocketAddrV4) -> String {
     let clients_range = clients_map.range(start_index, end_index);
     let list_len = clients_range.len();
     if !clients_range.is_empty() { // This ensures that at least the vector contains 1 element
@@ -186,10 +186,10 @@ pub fn reply_admin_getbyindex(start_index: usize, end_index: usize, clients_map:
         }
         clients_json_array.pop(); // So we can act safely
         clients_json_array.push(']');
-        log::info!("The admin requested a list of clients by the range [{}, {}) [{} client(s)]", start_index, end_index, list_len);
+        log::info!("The admin {} requested a list of clients by the range [{}, {}) [{} client(s)]", guilty, start_index, end_index, list_len);
         return format!("{{\"result\":\"{} client(s)\",\"clients\":{}}}", clients_range.len(), clients_json_array);
     } else {
-        log::info!("The admin requested a list of clients by the range [{}, {}), but there were no clients in that range", start_index, end_index);
+        log::info!("The admin {} requested a list of clients by the range [{}, {}), but there were no clients in that range", guilty, start_index, end_index);
         return format!("{{\"result\":\"{} client(s)\",\"clients\":[]}}", clients_range.len());
     }
 }
