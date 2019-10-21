@@ -64,11 +64,11 @@ impl Server {
                                         request_type = request.to_string();
                                         match request {
                                             requests::Request::Admin(a_request) => {
-                                                if peer_addr.ip() == self.address.ip() {
+                                                // if peer_addr.ip() == self.address.ip() {
                                                     match a_request {
                                                         requests::AdminRequest::Drop { password, ip } => {
                                                             if self.key == password {
-                                                                reply = replies::reply_admin_drop(&ip, &mut self.clients);
+                                                                reply = replies::reply_admin_drop(&ip, &mut self.clients, &peer_addr);
                                                             } else { 
                                                                 log::info!("The admin {} forgot the password", peer_addr);
                                                                 reply = replies::ReplyErrCodes::WrongPassword.to_string();
@@ -76,7 +76,7 @@ impl Server {
                                                         },
                                                         requests::AdminRequest::GetByIndex { password, start_index, end_index } => {
                                                             if self.key == password {
-                                                                reply = replies::reply_admin_getbyindex(start_index, end_index, &self.clients);
+                                                                reply = replies::reply_admin_getbyindex(start_index, end_index, &self.clients, &peer_addr);
                                                             } else { 
                                                                 log::info!("The admin {} forgot the password", peer_addr);
                                                                 reply = replies::ReplyErrCodes::WrongPassword.to_string();
@@ -84,7 +84,7 @@ impl Server {
                                                         },
                                                         requests::AdminRequest::GetByMac { password, mac } => {
                                                             if self.key == password {
-                                                                reply = replies::reply_admin_getbymac(&mac, &self.clients);
+                                                                reply = replies::reply_admin_getbymac(&mac, &self.clients, &peer_addr);
                                                             } else { 
                                                                 log::info!("The admin {} forgot the password", peer_addr);
                                                                 reply = replies::ReplyErrCodes::WrongPassword.to_string();
@@ -92,7 +92,7 @@ impl Server {
                                                         },
                                                         requests::AdminRequest::GetByUsername { password, username, start_index } => {
                                                             if self.key == password {
-                                                                reply = replies::reply_admin_getbyusername(&username, &self.clients, self.list_size, start_index);
+                                                                reply = replies::reply_admin_getbyusername(&username, &self.clients, self.list_size, start_index, &peer_addr);
                                                             } else { 
                                                                 log::info!("The admin {} forgot the password", peer_addr);
                                                                 reply = replies::ReplyErrCodes::WrongPassword.to_string();
@@ -100,7 +100,7 @@ impl Server {
                                                         },
                                                         requests::AdminRequest::GetRunningConfiguration { password } => {
                                                             if self.key == password {
-                                                                reply = replies::reply_admin_getrunningconfiguration(&self);
+                                                                reply = replies::reply_admin_getrunningconfiguration(&self, &peer_addr);
                                                             } else { 
                                                                 log::info!("The admin {} forgot the password", peer_addr);
                                                                 reply = replies::ReplyErrCodes::WrongPassword.to_string();
@@ -108,7 +108,7 @@ impl Server {
                                                         },
                                                         requests::AdminRequest::SetCapacity { password, capacity } => {
                                                             if self.key == password {
-                                                                reply = replies::reply_admin_setcapacity(capacity, &mut self.capacity, self.clients.len());
+                                                                reply = replies::reply_admin_setcapacity(capacity, &mut self.capacity, self.clients.len(), &peer_addr);
                                                             } else { 
                                                                 log::info!("The admin {} forgot the password", peer_addr);
                                                                 reply = replies::ReplyErrCodes::WrongPassword.to_string();
@@ -116,7 +116,7 @@ impl Server {
                                                         },
                                                         requests::AdminRequest::SetDropVerification { password, drop_verification } => {
                                                             if self.key == password {
-                                                                reply = replies::reply_admin_setdropverification(drop_verification, &mut self.drop_verification);
+                                                                reply = replies::reply_admin_setdropverification(drop_verification, &mut self.drop_verification, &peer_addr);
                                                             } else { 
                                                                 log::info!("The admin {} forgot the password", peer_addr);
                                                                 reply = replies::ReplyErrCodes::WrongPassword.to_string();
@@ -124,7 +124,7 @@ impl Server {
                                                         },
                                                         requests::AdminRequest::SetDropVotes { password, drop_votes } => {
                                                             if self.key == password {
-                                                                reply = replies::reply_admin_setdropvotes(drop_votes, &mut self.drop_votes, &mut self.clients);
+                                                                reply = replies::reply_admin_setdropvotes(drop_votes, &mut self.drop_votes, &mut self.clients, &peer_addr);
                                                             } else { 
                                                                 log::info!("The admin {} forgot the password", peer_addr);
                                                                 reply = replies::ReplyErrCodes::WrongPassword.to_string();
@@ -132,7 +132,7 @@ impl Server {
                                                         },
                                                         requests::AdminRequest::SetKey { password, key } => {
                                                             if self.key == password {
-                                                                reply = replies::reply_admin_setkey(&key, &mut self.key);
+                                                                reply = replies::reply_admin_setkey(&key, &mut self.key, &peer_addr);
                                                             } else { 
                                                                 log::info!("The admin {} forgot the password", peer_addr);
                                                                 reply = replies::ReplyErrCodes::WrongPassword.to_string();
@@ -140,7 +140,7 @@ impl Server {
                                                         },
                                                         requests::AdminRequest::SetListSize { password, list_size } => {
                                                             if self.key == password {
-                                                                reply = replies::reply_admin_setlistsize(list_size, &mut self.list_size);
+                                                                reply = replies::reply_admin_setlistsize(list_size, &mut self.list_size, &peer_addr);
                                                             } else { 
                                                                 log::info!("The admin {} forgot the password", peer_addr);
                                                                 reply = replies::ReplyErrCodes::WrongPassword.to_string();
@@ -148,17 +148,17 @@ impl Server {
                                                         },
                                                         requests::AdminRequest::SetPassword { password, new_password } => {
                                                             if self.key == password {
-                                                                reply = replies::reply_admin_setpassword(&new_password, &mut self.password);
+                                                                reply = replies::reply_admin_setpassword(&new_password, &mut self.password, &peer_addr);
                                                             } else { 
                                                                 log::info!("The admin {} forgot the password", peer_addr);
                                                                 reply = replies::ReplyErrCodes::WrongPassword.to_string();
                                                             }
                                                         }
                                                     }
-                                                } else {
-                                                    log::warn!("{} tried to administrate the server", peer_addr);
-                                                    reply = replies::ReplyErrCodes::RemoteAdminIsNotAllowed.to_string();
-                                                }
+                                                // } else {
+                                                //     log::warn!("{} tried to administrate the server", peer_addr);
+                                                //     reply = replies::ReplyErrCodes::RemoteAdminIsNotAllowed.to_string();
+                                                // }
                                             },
                                             requests::Request::Client(c_request) => {
                                                 match c_request {
