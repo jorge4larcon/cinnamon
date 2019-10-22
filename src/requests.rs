@@ -127,7 +127,7 @@ impl Request {
                                                                 log::debug!("Request::from - parsing request: ClientRequest::GetByUsername how obtained (username)");
                                                                 if let Some(username) = request.get("username") {
                                                                     if let Some(username) = username.as_str() {
-                                                                        if clients::Client::is_valid_username(username) {
+                                                                        // if clients::Client::is_valid_username(username) {
                                                                             log::debug!("Request::from - parsing request: ClientRequest::GetByUsername username obtained ({})", username);
                                                                             if let Some(start_index) = request.get("start_index") {
                                                                                 if let Some(start_index) = start_index.as_u64() {
@@ -139,7 +139,7 @@ impl Request {
                                                                                     } else { log::debug!("Request::from - parsing request: ClientRequest::GetByUsername incorrect start_index ({})", start_index); }
                                                                                 } else { log::debug!("Request::from - parsing request: ClientRequest::GetByUsername start_index not obtained"); }
                                                                             } else { log::debug!("Request::from - parsing request: ClientRequest::GetByUsername start_index not obtained"); }
-                                                                        } else { log::debug!("Request::from - parsing request: ClientRequest::GetByUsername incorrect username ({})", username); }
+                                                                        // } else { log::debug!("Request::from - parsing request: ClientRequest::GetByUsername incorrect username ({})", username); }
                                                                     } else { log::debug!("Request::from - parsing request: ClientRequest::GetByUsername username not obtained"); }
                                                                 } else { log::debug!("Request::from - parsing request: ClientRequest::GetByUsername username not obtained"); }
                                                             },
