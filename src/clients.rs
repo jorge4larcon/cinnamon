@@ -265,7 +265,7 @@ impl fmt::Display for ClientsMap {
         } else {
             let mut clients_map = String::default();
             for (i, (mac, client)) in self.clients.iter().enumerate() {
-                clients_map.push_str(&format!("[{}] {} {}\n", i+1, mac, client));
+                clients_map.push_str(&format!("[{}] {} {}\n", i, mac, client));
             }
             if self.clients.len() > 1 {
                 clients_map.push_str(&format!("{} clients", self.clients.len()));
