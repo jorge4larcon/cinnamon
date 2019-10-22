@@ -369,7 +369,11 @@ impl ClientsMap {
                 }                
             }
         }
-        (clients, self.clients.len()-1)
+        if self.clients.len() > 0 {
+            return (clients, self.clients.len()-1);
+        } else {
+            return (clients, self.clients.len());
+        }
     }
 
     pub fn usernames_that_contain_with_macs(&self, start_index: usize, size: usize, pattern: &str) -> (Vec<(ipparser::MacAddress, Client)>, usize) {
@@ -383,7 +387,11 @@ impl ClientsMap {
                 }
             }
         }
-        (clients, self.clients.len()-1)
+        if self.clients.len() > 0 {
+            return (clients, self.clients.len()-1);
+        } else {
+            return (clients, self.clients.len());
+        }
     }
 
     pub fn usernames_that_contain_get_by_mac_only(&self, start_index: usize, size: usize, pattern: &str) -> (Vec<Client>, usize) {
@@ -399,7 +407,11 @@ impl ClientsMap {
                 }                
             }
         }
-        (clients, self.clients.len() - 1)            
+        if self.clients.len() > 0 {
+            return (clients, self.clients.len()-1);
+        } else {
+            return (clients, self.clients.len());
+        }
     }
 
     pub fn drop_vote_by_mac(&mut self, mac: &ipparser::MacAddress, drop_votes: u8, max_drop_votes: u8) -> bool {
