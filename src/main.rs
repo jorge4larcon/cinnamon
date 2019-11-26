@@ -1,3 +1,7 @@
+// Author: Jorge Alarcon Alvarez
+// Email:  jorge4larcon@gmail.com
+// This is the module where the command parsing logic is hanlded and the program is started.
+
 extern crate clap;
 
 use cinnamon::config;

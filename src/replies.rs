@@ -1,3 +1,7 @@
+// Author: Jorge Alarcon Alvarez
+// Email:  jorge4larcon@gmail.com
+// This module contains the server replies for the incomming clients.
+
 // TODO: to make drop or get the client must be signed up
 
 extern crate log;

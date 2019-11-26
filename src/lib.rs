@@ -1,3 +1,7 @@
+// Author: Jorge Alarcon Alvarez
+// Email:  jorge4larcon@gmail.com
+// This module starts the application and communicate the modules.
+
 extern crate log;
 
 pub mod ipparser;

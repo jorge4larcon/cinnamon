@@ -1,3 +1,7 @@
+// Author: Jorge Alarcon Alvarez
+// Email:  jorge4larcon@gmail.com
+// This module parses the requests from the clients.
+
 extern crate serde_json;
 extern crate log;
 

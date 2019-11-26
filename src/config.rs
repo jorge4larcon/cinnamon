@@ -1,3 +1,7 @@
+// Author: Jorge Alarcon Alvarez
+// Email:  jorge4larcon@gmail.com
+// This module configures the application commands before starting.
+
 extern crate clap;
 extern crate fern;
 extern crate chrono;

@@ -1,3 +1,8 @@
+// Author: Jorge Alarcon Alvarez
+// Email:  jorge4larcon@gmail.com
+// This module defines the struct Client and Clients, structs used to manage clients information
+
+
 extern crate serde_json;
 extern crate regex;
 

@@ -1,3 +1,7 @@
+// Author: Jorge Alarcon Alvarez
+// Email:  jorge4larcon@gmail.com
+// This module starts the server and hanldes the incomming connections.
+
 extern crate log;
 
 use std::io::{
